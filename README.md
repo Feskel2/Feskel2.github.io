@@ -1,6 +1,6 @@
 # FIB · NSB — база и каф
 
-Сайт-памятка для новых сотрудников **FIB · NSB** на Majestic RP (Phoenix): карта знаний, процедура задержания по шагам, статьи УК с санкциями, чек-лист и подробная инструкция.
+Сайт-памятка для новых сотрудников **FIB · NSB** на Majestic RP (**Houston**): карта знаний, процедура задержания по шагам, статьи УК с санкциями, чек-лист и подробная инструкция.
 
 **Сайт:** https://feskel2.github.io/  (зеркало: https://feskel2.github.io/fibnsb/)
 **Инструкция:** https://feskel2.github.io/guide.html
@@ -17,13 +17,13 @@
 
 ## Источники
 
-- [Процессуальный кодекс штата San-Andreas](https://forum.majestic-rp.ru/threads/protsessual-nyi-kodeks-shtata-san-andreas.2247406/) — Phoenix, ред. 08.04.2026
-- [Уголовный кодекс штата San-Andreas](https://forum.majestic-rp.ru/threads/ugolovnyi-kodeks-shtata-san-andreas.2247404/) — Phoenix, ред. 05.04.2026
+- [Процессуальный кодекс штата San-Andreas](https://forum.majestic-rp.ru/threads/protsessual-nyi-kodeks-shtata-san-andreas.3670916/) — Houston, ред. 2026
+- [Уголовный кодекс штата San-Andreas](https://forum.majestic-rp.ru/threads/ugolovnyi-kodeks-shtata-san-andreas.3670936/) — Houston, ред. 2026
 - Правила государственных организаций Majestic, п. 5.2 ПГО (FIB)
 
 ## Важно
 
-Неофициальная памятка. Устав фракции и регламент NSB главнее сайта: где расходится — прав устав. Номера статей и сроки на других серверах Majestic отличаются — сверяй свою редакцию кодексов.
+Неофициальная памятка. Устав фракции и регламент NSB главнее сайта: где расходится — прав устав. Репозиторий содержит правила сервера Houston. Номера статей и сроки на других серверах Majestic отличаются — сверяй свою редакцию кодексов.
 
 ## Правки
 
