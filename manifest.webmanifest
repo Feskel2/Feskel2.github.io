@@ -1,0 +1,15 @@
+{
+  "name": "FIB NSB — база и каф",
+  "short_name": "FIB NSB",
+  "description": "База и процедура задержания для сотрудников FIB NSB, Majestic RP Phoenix",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d141a",
+  "theme_color": "#0d141a",
+  "lang": "ru",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

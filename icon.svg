@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FIB NSB">
+  <rect width="512" height="512" rx="96" fill="#0d141a"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#c9a445" stroke-width="14"/>
+  <circle cx="256" cy="256" r="104" fill="none" stroke="#6a8aa6" stroke-width="5" stroke-dasharray="10 14"/>
+  <text x="256" y="243" text-anchor="middle" font-family="Bahnschrift, DIN Alternate, Arial Narrow, sans-serif"
+        font-size="92" font-weight="600" letter-spacing="6" fill="#e9eff4">FIB</text>
+  <text x="256" y="330" text-anchor="middle" font-family="Bahnschrift, DIN Alternate, Arial Narrow, sans-serif"
+        font-size="70" font-weight="600" letter-spacing="10" fill="#c9a445">NSB</text>
+</svg>

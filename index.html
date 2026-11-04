@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d141a">
+<meta name="description" content="База и процедура задержания для сотрудников FIB NSB, Majestic RP Phoenix: карта знаний, каф по шагам, статьи УК, чек-лист.">
+<meta property="og:title" content="FIB · NSB — база и каф">
+<meta property="og:description" content="Карта знаний, каф по шагам, статьи, чек-лист. Для новых сотрудников FIB NSB, Majestic RP Phoenix.">
+<meta property="og:type" content="website">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FIB NSB">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>FIB · NSB — база и каф (Majestic RP, Phoenix)</title>
+<style>
+  :root{
+    --ink:#0d141a; --ink-2:#111b23; --ink-3:#16232d;
+    --paper:#e9e3d5; --paper-2:#f2ede1; --paper-line:rgba(20,25,30,.10);
+    --brass:#c9a445; --coral:#c65b4c; --steel:#6a8aa6; --plum:#96647e; --pine:#5d8a6b;
+    --text:#9fb0bd; --text-dim:#6e8291; --paper-ink:#20262c; --paper-ink-dim:#5b6169;
+    --font-display:'Bahnschrift','DIN Alternate','Arial Narrow',sans-serif;
+    --font-body:'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;
+    --font-paper:'Cambria','Georgia','Times New Roman',serif;
+    --font-mono:'Cascadia Mono','Consolas','SF Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--ink); color:var(--text);
+    font-family:var(--font-body); font-size:15px; line-height:1.5;
+    overflow:hidden;
+  }
+  /* ---------- top bar ---------- */
+  header{
+    display:flex; align-items:center; gap:22px;
+    padding:14px 22px;
+    border-bottom:1px solid rgba(159,176,189,.16);
+    background:linear-gradient(180deg,var(--ink-2),var(--ink));
+    position:relative; z-index:5;
+  }
+  .brand{display:flex; align-items:baseline; gap:12px; min-width:0}
+  .brand h1{
+    font-family:var(--font-display); font-weight:600; font-size:21px;
+    letter-spacing:.08em; margin:0; color:#e6edf2; white-space:nowrap;
+  }
+  .brand h1 b{color:var(--brass); font-weight:600}
+  .brand .sub{font-size:12.5px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  nav{display:flex; gap:2px; margin-left:auto; align-items:flex-end}
+  nav button{
+    font-family:var(--font-body); font-size:13px; color:var(--text-dim);
+    background:transparent; border:1px solid transparent; border-bottom:none;
+    padding:8px 15px 7px; cursor:pointer; border-radius:3px 3px 0 0;
+    position:relative; top:1px;
+  }
+  nav button:hover{color:var(--text); background:rgba(159,176,189,.06)}
+  nav button[aria-selected="true"]{
+    background:var(--ink); color:#e6edf2;
+    border-color:rgba(159,176,189,.22);
+    box-shadow:inset 0 2px 0 var(--brass);
+  }
+  nav button:focus-visible{outline:2px solid var(--brass); outline-offset:-2px}
+  .ext{font-size:13px;color:var(--brass);text-decoration:none;border-bottom:1px solid rgba(201,164,69,.4);padding-bottom:1px;white-space:nowrap}
+  .ext:hover{color:#e6edf2;border-color:rgba(230,237,242,.6)}
+  .ext:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+  .prog{display:flex; align-items:center; gap:10px; padding-left:16px; border-left:1px solid rgba(159,176,189,.16)}
+  .prog .ring{width:34px; height:34px; flex:none}
+  .prog .ring circle{fill:none; stroke-width:3.5}
+  .prog .ring .bg{stroke:rgba(159,176,189,.18)}
+  .prog .ring .fg{stroke:var(--brass); stroke-linecap:round; transform:rotate(-90deg); transform-origin:50% 50%}
+  .prog .txt{font-size:12px; line-height:1.25; color:var(--text-dim)}
+  .prog .txt b{display:block; color:#e6edf2; font-family:var(--font-display); font-size:14px; letter-spacing:.04em}
+
+  /* ---------- layouts ---------- */
+  main{height:calc(100vh - 61px); display:flex}
+  section.pane{display:none; flex:1; min-width:0; min-height:0}
+  section.pane[data-active]{display:flex}
+
+  /* ---------- map ---------- */
+  #mapWrap{position:relative; flex:1; min-width:0; background:
+      radial-gradient(circle at 38% 42%, rgba(106,138,166,.16), transparent 58%),
+      var(--ink);}
+  #mapWrap::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:linear-gradient(rgba(159,176,189,.05) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(159,176,189,.05) 1px,transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(circle at 38% 42%, #000 30%, transparent 78%);
+  }
+  svg#map{width:100%; height:100%; display:block; position:relative; z-index:1; cursor:grab; touch-action:none}
+  svg#map.dragging{cursor:grabbing}
+  .link{fill:none; stroke:rgba(159,176,189,.28); stroke-width:1.1}
+  .link.leaf{stroke:rgba(159,176,189,.2); stroke-dasharray:3 4}
+  .node{cursor:pointer}
+  .node .disc{transition:r .18s ease, fill-opacity .18s ease}
+  .node .lbl{
+    font-family:var(--font-display); fill:#dfe8ee; font-size:15px; letter-spacing:.03em;
+    pointer-events:none; user-select:none;
+  }
+  .node.leaf .lbl{font-size:12.5px; fill:#c8d5de}
+  .node:hover .disc{fill-opacity:.34}
+  .node[data-selected] .disc{fill-opacity:.42; stroke-width:2.4}
+  .node:focus-visible{outline:none}
+  .node:focus-visible .disc{stroke-width:3; stroke:#fff}
+  .node.leaf .dot{fill:#c8d5de; opacity:.55}
+  .hub .disc{fill:#1b2a35; stroke:#e6edf2; stroke-width:2}
+  .hub .lbl{font-size:17px; fill:#fff}
+  .hub .lbl small{font-size:11px; fill:var(--brass); letter-spacing:.12em}
+  .mapctl{position:absolute; right:16px; bottom:16px; display:flex; flex-direction:column; gap:6px; z-index:3}
+  .mapctl button{
+    width:34px; height:34px; border-radius:3px; cursor:pointer;
+    background:rgba(22,35,45,.92); color:var(--text); border:1px solid rgba(159,176,189,.22);
+    font-family:var(--font-mono); font-size:15px; line-height:1;
+  }
+  .mapctl button:hover{color:#fff; border-color:rgba(159,176,189,.5)}
+  .hint{position:absolute; left:20px; bottom:16px; font-size:12px; color:var(--text-dim); z-index:3}
+  .legend{position:absolute; left:20px; top:16px; display:flex; gap:14px; flex-wrap:wrap; z-index:3; font-size:12px; color:var(--text-dim)}
+  .legend i{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:1px}
+
+  /* ---------- paper panel ---------- */
+  aside#detail{
+    width:400px; flex:none; background:var(--paper); color:var(--paper-ink);
+    border-left:1px solid rgba(0,0,0,.35); overflow-y:auto;
+    background-image:repeating-linear-gradient(180deg, transparent, transparent 27px, var(--paper-line) 27px, var(--paper-line) 28px);
+    padding:26px 26px 40px;
+  }
+  aside#detail .eyebrow{
+    font-family:var(--font-paper); font-style:italic; font-size:13px; color:var(--paper-ink-dim);
+    margin:0 0 6px; display:flex; align-items:center; gap:8px;
+  }
+  aside#detail .eyebrow .cat{font-style:normal; font-size:11px; letter-spacing:.06em; padding:1px 7px; border:1px solid currentColor; border-radius:2px}
+  aside#detail h2{font-family:var(--font-paper); font-size:26px; line-height:1.15; margin:0 0 4px; font-weight:700}
+  aside#detail .meta{font-family:var(--font-mono); font-size:11.5px; color:var(--paper-ink-dim); margin:0 0 16px; letter-spacing:.02em}
+  aside#detail ul{margin:0 0 16px; padding-left:18px}
+  aside#detail li{margin:0 0 8px}
+  aside#detail li::marker{color:var(--coral)}
+  aside#detail .refs{display:flex; flex-wrap:wrap; gap:6px; margin:14px 0 18px}
+  aside#detail .ref{
+    font-family:var(--font-mono); font-size:11.5px; background:rgba(201,164,69,.16);
+    border:1px solid rgba(201,164,69,.5); color:#6b5316; padding:2px 7px; border-radius:2px;
+  }
+  aside#detail .code{
+    font-family:var(--font-mono); font-size:12.5px; background:rgba(32,38,44,.06);
+    border-left:3px solid var(--steel); padding:8px 12px; margin:0 0 12px; white-space:pre-wrap;
+  }
+  .mark{
+    display:inline-flex; align-items:center; gap:8px; font-family:var(--font-body); font-size:13px;
+    background:transparent; color:var(--paper-ink); border:1px solid rgba(32,38,44,.4);
+    padding:7px 12px; border-radius:2px; cursor:pointer;
+  }
+  .mark:hover{background:rgba(32,38,44,.06)}
+  .mark[aria-pressed="true"]{background:var(--pine); border-color:var(--pine); color:#fff}
+  .mark:focus-visible{outline:2px solid var(--coral); outline-offset:2px}
+  .empty{font-family:var(--font-paper); font-size:16px; color:var(--paper-ink-dim); line-height:1.5}
+  .empty b{color:var(--paper-ink)}
+  .card-index{margin:22px 0 0; padding:16px 0 0; border-top:1px solid rgba(32,38,44,.22)}
+  .card-index h3{font-family:var(--font-body); font-size:12px; letter-spacing:.04em; margin:0 0 10px; color:var(--paper-ink-dim); font-weight:600}
+  .card-index ol{list-style:none; margin:0; padding:0; counter-reset:ix}
+  .card-index li{counter-increment:ix; margin:0}
+  .card-index button{
+    display:flex; gap:10px; width:100%; text-align:left; background:none; border:none;
+    border-bottom:1px solid var(--paper-line); padding:7px 2px; cursor:pointer;
+    font-family:var(--font-body); font-size:13.5px; color:var(--paper-ink);
+  }
+  .card-index button::before{content:counter(ix,decimal-leading-zero); font-family:var(--font-mono); font-size:11px; color:var(--paper-ink-dim); padding-top:2px}
+  .card-index button:hover{background:rgba(32,38,44,.05)}
+  .card-index button .ok{margin-left:auto; color:var(--pine); font-size:12px}
+
+  /* ---------- steps pane ---------- */
+  #pane-steps, #pane-articles, #pane-check{background:var(--ink); overflow-y:auto; padding:30px 34px 60px; flex-direction:column}
+  #pane-steps[data-active],#pane-articles[data-active],#pane-check[data-active]{display:block}
+  .pane-head{max-width:820px; margin:0 0 24px}
+  .pane-head h2{font-family:var(--font-paper); font-size:30px; margin:0 0 6px; color:#e9eff4; font-weight:700}
+  .pane-head p{margin:0; color:var(--text-dim); font-size:14px}
+  .step{max-width:820px; border-left:2px solid rgba(159,176,189,.2); padding:0 0 26px 22px; position:relative}
+  .step::before{
+    content:attr(data-n); position:absolute; left:-15px; top:0; width:28px; height:28px;
+    display:grid; place-items:center; border-radius:50%; background:var(--ink-3);
+    border:1px solid rgba(159,176,189,.3); font-family:var(--font-mono); font-size:12px; color:var(--brass);
+  }
+  .step h3{font-family:var(--font-body); font-size:17px; margin:2px 0 4px; color:#e9eff4; font-weight:600}
+  .step .law{font-family:var(--font-mono); font-size:11.5px; color:var(--brass); margin:0 0 10px}
+  .step p{margin:0 0 10px; color:var(--text)}
+  .step ul{margin:0 0 12px; padding-left:18px; color:var(--text)}
+  .step li{margin-bottom:6px}
+  .step pre{
+    font-family:var(--font-mono); font-size:12.5px; background:var(--ink-2); color:#cfe0ea;
+    border:1px solid rgba(159,176,189,.16); border-left:3px solid var(--steel);
+    padding:10px 14px; margin:0 0 12px; white-space:pre-wrap; overflow-x:auto;
+  }
+  .step pre::first-line{color:#e6edf2}
+
+  /* ---------- articles ---------- */
+  .tools{max-width:980px; display:flex; gap:12px; margin:0 0 18px; flex-wrap:wrap}
+  .tools input{
+    flex:1; min-width:220px; background:var(--ink-2); border:1px solid rgba(159,176,189,.22);
+    color:#e6edf2; font-family:var(--font-body); font-size:14px; padding:9px 13px; border-radius:2px;
+  }
+  .tools input:focus{outline:2px solid var(--brass); outline-offset:-1px}
+  .tools .count{font-family:var(--font-mono); font-size:12px; color:var(--text-dim); align-self:center}
+  table.uk{width:100%; max-width:980px; border-collapse:collapse; font-size:14px}
+  table.uk th{
+    text-align:left; font-weight:600; font-size:11.5px; letter-spacing:.05em; color:var(--text-dim);
+    border-bottom:1px solid rgba(159,176,189,.28); padding:8px 10px 8px 0;
+  }
+  table.uk td{padding:9px 10px 9px 0; border-bottom:1px solid rgba(159,176,189,.1); vertical-align:top}
+  table.uk td.art{font-family:var(--font-mono); font-size:12.5px; color:var(--brass); white-space:nowrap}
+  table.uk td.st{color:var(--coral); font-size:12px; white-space:nowrap; letter-spacing:.06em}
+  table.uk td.pen{color:var(--text); font-size:13px}
+  table.uk tr:hover td{background:rgba(159,176,189,.05)}
+
+  /* ---------- checklist ---------- */
+  .checklist{max-width:760px}
+  .bar{height:3px; background:rgba(159,176,189,.16); margin:0 0 22px; position:relative}
+  .bar span{position:absolute; inset:0 auto 0 0; background:var(--pine); width:0; transition:width .3s ease}
+  .check-item{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid rgba(159,176,189,.11)}
+  .check-item input{margin:3px 0 0; accent-color:var(--pine); width:16px; height:16px; flex:none}
+  .check-item label{cursor:pointer; color:var(--text)}
+  .check-item input:checked + label{color:var(--text-dim); text-decoration:line-through; text-decoration-color:rgba(159,176,189,.5)}
+  .check-item .why{display:block; font-size:12px; color:var(--text-dim); margin-top:2px; font-family:var(--font-mono)}
+
+  @media (max-width:980px){
+    header{flex-wrap:wrap; gap:8px 12px; padding:10px 14px}
+    .prog{border:none; padding-left:0}
+    nav{order:3; width:100%; overflow-x:auto}
+    main{height:calc(100vh - 96px)}
+    #pane-map[data-active]{flex-direction:column}
+    #mapWrap{min-height:40vh}
+    aside#detail{width:auto; max-height:52vh; border-left:none; border-top:1px solid rgba(0,0,0,.4)}
+    .brand .sub{display:none}
+    .ext{font-size:12px}
+    #pane-steps,#pane-articles,#pane-check{padding:20px 16px 50px}
+    .hint,.legend{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important; animation:none !important}
+  }
+  @media print{
+    body{background:#fff; color:#000; overflow:visible}
+    header,nav,.mapctl,#mapWrap,.hint,.legend{display:none}
+    aside#detail{width:100%; max-height:none; border:none}
+    main{height:auto; display:block}
+    section.pane{display:block !important}
+    .step{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>FIB <b>·</b> NSB</h1>
+    <div class="sub">Для сотрудников FIB · NSB — Majestic RP, Phoenix · кодексы ред. 04.2026</div>
+  </div>
+  <nav role="tablist" aria-label="Разделы">
+    <button role="tab" id="tab-map" aria-selected="true" aria-controls="pane-map">Карта</button>
+    <button role="tab" id="tab-steps" aria-selected="false" aria-controls="pane-steps">Каф по шагам</button>
+    <button role="tab" id="tab-articles" aria-selected="false" aria-controls="pane-articles">Статьи</button>
+    <button role="tab" id="tab-check" aria-selected="false" aria-controls="pane-check">Чек-лист</button>
+  </nav>
+  <a class="ext" href="guide.html">Инструкция</a>
+  <div class="prog" title="Сколько узлов карты отмечено как изученные">
+    <svg class="ring" viewBox="0 0 36 36" aria-hidden="true">
+      <circle class="bg" cx="18" cy="18" r="15"></circle>
+      <circle class="fg" cx="18" cy="18" r="15" stroke-dasharray="94.2" stroke-dashoffset="94.2" id="ringFg"></circle>
+    </svg>
+    <div class="txt"><b id="progN">0 / 0</b> изучено</div>
+  </div>
+</header>
+
+<main>
+  <section class="pane" id="pane-map" data-active role="tabpanel" aria-labelledby="tab-map">
+    <div id="mapWrap">
+      <div class="legend" id="legend"></div>
+      <svg id="map" viewBox="-660 -660 1320 1320" role="application" aria-label="Карта знаний: база и процедура задержания">
+        <g id="viewport"></g>
+      </svg>
+      <div class="mapctl">
+        <button id="zin" title="Приблизить" aria-label="Приблизить">+</button>
+        <button id="zout" title="Отдалить" aria-label="Отдалить">−</button>
+        <button id="zreset" title="Сбросить вид" aria-label="Сбросить вид">⌖</button>
+      </div>
+      <div class="hint">колесо — масштаб · перетаскивание — сдвиг · клик по ветке — раскрыть · на телефоне страницу можно добавить на главный экран</div>
+    </div>
+    <aside id="detail" aria-live="polite"></aside>
+  </section>
+
+  <section class="pane" id="pane-steps" role="tabpanel" aria-labelledby="tab-steps">
+    <div class="pane-head">
+      <h2>Каф: от основания до отчёта</h2>
+      <p>Порядок ст. 17 ПК. Пункты 1–4 (наручники, удостоверение, первичный обыск, Миранда) можно менять местами — остальное строго по очереди.</p>
+    </div>
+    <div id="stepsList"></div>
+  </section>
+
+  <section class="pane" id="pane-articles" role="tabpanel" aria-labelledby="tab-articles">
+    <div class="pane-head">
+      <h2>Статьи, которые ты инкриминируешь</h2>
+      <p>Уголовный кодекс Phoenix, ред. 05.04.2026. ★ = год лишения свободы. Судимость ставится с ★★★★. Уголовный штраф — альтернатива, если она указана в статье.</p>
+    </div>
+    <div class="tools">
+      <input id="uksearch" type="search" placeholder="Поиск: номер статьи, слово, звёзды…" aria-label="Поиск по статьям">
+      <div class="count" id="ukcount"></div>
+    </div>
+    <table class="uk">
+      <thead><tr><th>Статья</th><th>Состав</th><th>★</th><th>Наказание</th></tr></thead>
+      <tbody id="ukbody"></tbody>
+    </table>
+  </section>
+
+  <section class="pane" id="pane-check" role="tabpanel" aria-labelledby="tab-check">
+    <div class="pane-head">
+      <h2>Чек-лист перед кафом</h2>
+      <p>Отметки сохраняются в браузере. Проходи по списку сверху вниз — это порядок ст. 17.</p>
+    </div>
+    <div class="checklist">
+      <div class="bar" aria-hidden="true"><span id="checkBar"></span></div>
+      <div id="checkList"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const CATS = {
+  prep:  {name:'Подготовка', color:'var(--pine)',  hex:'#5d8a6b'},
+  law:   {name:'Закон',      color:'var(--brass)', hex:'#c9a445'},
+  proc:  {name:'Процедура',  color:'var(--coral)', hex:'#c65b4c'},
+  case:  {name:'Дело',       color:'var(--steel)', hex:'#6a8aa6'},
+  check: {name:'Проверка',   color:'var(--plum)',  hex:'#96647e'}
+};
+
+const MAP = [
+  { id:'start', cat:'prep', name:'Старт смены', nodes:[
+    { id:'s1', title:'Знаки и снаряжение', body:[
+      'Удостоверение, бейдж или жетон предъявляются <b>до</b> процессуальных действий — это отдельный пункт порядка задержания.',
+      'Наручники и спецсредства по табелю; тазер — не более 3 применений, дальше пересмотр средства.'],
+      refs:['ПК 17 ч.1 п.б','ПК 37'] },
+    { id:'s2', title:'Фиксация включена', body:[
+      'Видеофиксация обязательна при пресечении правонарушения и при любых процессуальных действиях.',
+      'Хранить записи 72 часа; при жалобе или иске удалять нельзя.'],
+      refs:['ПК 23','ПК 32','ПК 33'] },
+    { id:'s3', title:'Компетенция проверена', body:[
+      'Федеральные статьи — твои. Региональные — только по одобрению запроса старшим составом LSPD/LSCSD.',
+      'Работа без разрешения = недопустимые процессуальные действия.'],
+      refs:['ПК 35','ПК 36'] },
+    { id:'s4', title:'Зона и напарник', body:[
+      'Посторонние — на 6 метров; в закрытом помещении распоряжается тот, кто начал задержание.',
+      'Буйный задержанный — второй сотрудник рядом, но не более двух помощников без одобрения проводящего.'],
+      refs:['ПК 18','ПК 37 ч.3'] },
+    { id:'s5', title:'База и ориентировки', body:[
+      'Проверить розыск, ориентировки на лицо и транспорт, историю задержаний по фигуранту.',
+      'Запись в боло-розыске сама по себе — основание задержания.'],
+      refs:['ПК 16 ч.2 п.е','ПК 39'] },
+    { id:'s6', title:'Три цифры в голове', body:[
+      '<b>1 час</b> — задержание. <b>1 ★ = 1 год</b> и 1 уровень боло. <b>★★★★</b> — с этой тяжести ставится судимость.'],
+      refs:['ПК 15','ПК 27','УК 5.8'] }
+  ]},
+
+  { id:'law', cat:'law', name:'Правовой каркас', nodes:[
+    { id:'l1', title:'Задержание — до 1 часа', body:[
+      'Это мера процессуального принуждения, а не наказание: цель — собрать доказательства.',
+      'Процессуальный час замораживается на адвоката, прокурора, допрос, экспертизу, обыск имущества, просмотр фиксации.'],
+      refs:['ПК 15','ПК 20 ч.2','ПК 78'] },
+    { id:'l2', title:'Основания задержания', body:[
+      'Семь оснований, достаточно одного: застигнут на месте; следы на нём или в жилище; фото/видео; ордер; ориентировка; боло-розыск; умышленное сокрытие личности.',
+      'Маска без законных оснований → требование снять → проверка документов → при отказе установление личности.'],
+      refs:['ПК 16 ч.2'] },
+    { id:'l3', title:'Кто вправе присутствовать', body:[
+      'Проводящий + до 2 помощников (с его одобрения), задержанный, прокурор, адвокат, начальство задержанного-госслужащего, до 2 USSS/FIB при неприкосновенном лице, 1 агент Intelligence Branch.',
+      'DB и CID — только для допроса-передачи, с согласия проводящего.'],
+      refs:['ПК 18'] },
+    { id:'l4', title:'Права задержанного', body:[
+      'Один звонок до 3 минут до начала ареста; адвокат; право молчать; ходатайства и отводы; конфиденциальная встреча с адвокатом до 10 минут.'],
+      refs:['ПК 22'] },
+    { id:'l5', title:'Обязанности проводящего', body:[
+      'Вести видеозапись. Разъяснять причины адвокату и прокурору. По требованию — предъявлять доказательства.',
+      'При задержании по авто-боло — приобщить материалы задержанного о невиновности.'],
+      refs:['ПК 23'] },
+    { id:'l6', title:'Основания освободить', body:[
+      'Нет доказательств; санкция не предполагает лишение свободы; задержание проведено с нарушением оснований; прокурор не подтвердил; статус неприкосновенности.',
+      'Освободить вовремя — это процессуалка, а не провал.'],
+      refs:['ПК 20'] },
+    { id:'l7', title:'Стадии силы', body:[
+      'Присутствие → устные требования → силовое воздействие и дубинка → нелетальное (тазер, пули, собака, газ) → огнестрел.',
+      'Тазер не применяют к людям в транспорте, на воде, на возвышенности, к беременным — кроме угрозы с их стороны. Предупредительных выстрелов не делают.'],
+      refs:['ПК 37'] },
+    { id:'l8', title:'Залог', body:[
+      'Не менее 25 000 $ + 25 000 $ за каждую ★.',
+      'Отказать: рецидивист; нет суммы; отказывается сотрудничать; осуждён более чем по 3 статьям; есть судимость.'],
+      refs:['ПК 34','УК 5.10'] },
+    { id:'l9', title:'Жилище и помещения', body:[
+      'Осмотр — с согласия проживающих или по судебному акту. Обыск — решение суда, судебный ордер или ордер Генпрокурора.',
+      'Без ордера — только когда обыск не терпит отлагательства, с решением сотрудника. Нежилое — по ордеру.'],
+      refs:['ПК 4'] },
+    { id:'l10', title:'Компетенция ведомств', body:[
+      'Региональная — LSPD/LSCSD; федеральная — FIB и USSS; финансовая — USSS; военная — SANG.',
+      'Смешанная компетенция — совместное следствие в пределах полномочий.'],
+      refs:['ПК 36'] }
+  ]},
+
+  { id:'kaf', cat:'proc', name:'Каф: 10 шагов', nodes:[
+    { id:'k1', title:'1. Основание', body:[
+      'Одна фраза: что произошло, какая статья, откуда знаешь. «Показался подозрительным» — не основание.'],
+      refs:['ПК 16 ч.2'] },
+    { id:'k2', title:'2. Приказ и наручники', body:[
+      'Требование остановиться, фиксация реакции, наручники. Бежит — тазер или дубинка, но не огнестрел.'],
+      refs:['ПК 37'] },
+    { id:'k3', title:'3. Удостоверение', body:[
+      'Предъявить служебное удостоверение, жетон или бейдж, подтверждающий принадлежность к органам власти.'],
+      refs:['ПК 17 ч.1 п.б'] },
+    { id:'k4', title:'4. Первичный обыск', body:[
+      'Цель — колюще-режущее, огнестрел, наркотики, взрывчатка. Опасное <b>можно изымать</b> сразу.',
+      'Документы смотреть можно. Ценности и улики — не здесь, а при вторичном обыске.'],
+      refs:['ПК 17 ч.1 п.в'] },
+    { id:'k5', title:'5. Миранда', body:[
+      'Зачитать после задержания и до любых вопросов. Второй раз — только если не понял, с уведомлением, что больше не будут.',
+      'Факт зачитывания фиксировать в /do всегда.'],
+      refs:['ПК 17 ч.2'] },
+    { id:'k6', title:'6. Идентификация', body:[
+      'Личность, проверка по базе федерального розыска, проверка принадлежности к госорганам — по бейджу, удостоверению или базе.'],
+      refs:['ПК 17 ч.1 п.д','ПК 19'] },
+    { id:'k7', title:'7. Доставка', body:[
+      'В участок, департамент шерифа, штаб-квартиру FIB или иное место следствия — если нужен допрос или экспертиза.'],
+      refs:['ПК 17 ч.1 п.е'] },
+    { id:'k8', title:'8. Права и ст. 19', body:[
+      'Запрос адвоката (3 минуты на вызов, ждать 10), звонок до 3 минут.',
+      'Госслужащий, WN или частный адвокат — уведомить руководство и прокуратуру, заморозка до 15 минут.'],
+      refs:['ПК 17 ч.1 п.ж','ПК 19','ПК 22'] },
+    { id:'k9', title:'9. Вторичный обыск и статьи', body:[
+      'Изъять всё нелегальное, а также оружие, спецсредства и боеприпасы независимо от законности хранения.',
+      'Квалификация по факту, статья называется вслух.'],
+      refs:['ПК 27','УК 5.8'] },
+    { id:'k10', title:'10. Оформление и отчёт', body:[
+      'Меню ареста: срок по статье, залог, отметка о судимости при ★★★★+, причина = статья и что именно сделал.',
+      'Отчёт или кейс: основание, хронология, изъятое, статьи, доказательства, следующие шаги.'],
+      refs:['ПК 27','ПК 49'] }
+  ]},
+
+  { id:'qual', cat:'law', name:'Квалификация', nodes:[
+    { id:'q1', title:'Звёзды и сроки', body:[
+      'Одна ★ = один год. Несколько статей — срок складывается полностью или частично.',
+      'Уровень боло-розыска равен приоритету самой тяжкой статьи.'],
+      refs:['УК 26 ч.2','ПК 27 ч.1 п.в','ПК 39 ч.2'] },
+    { id:'q2', title:'Судимость', body:[
+      'Ставится при аресте по статьям ★★★★ и выше — отметка в протоколе.',
+      'Уголовный штраф судимости не создаёт.'],
+      refs:['УК 5.8'] },
+    { id:'q3', title:'Штраф или срок', body:[
+      'Где в статье указан уголовный штраф — можно назначить его вместо лишения свободы. Уголовные штрафы выписывают LSPD, LSCSD, USSS, FIB, прокуратура и суд.',
+      'По итогам расследования доступны только лишение свободы и уголовный штраф.'],
+      refs:['УК 5 ч.3','УК 5 ч.4'] },
+    { id:'q4', title:'Добровольная сдача', body:[
+      'Освобождает от ответственности по 12.8, 12.8.1, 13.1, 13.2.',
+      'Изъятие при задержании добровольной сдачей не считается.'],
+      refs:['УК 5.9'] },
+    { id:'q5', title:'16.15 — особый случай', body:[
+      'Уклонение от отбывания: от 10–19 суток КПЗ до 2–5 лет.',
+      'Если в розыске только 16.15 — уровень сохраняется тем, каким был; иначе — по самой тяжкой статье.'],
+      refs:['УК 16.15'] },
+    { id:'q6', title:'Таблица статей', body:[
+      'Открой вкладку «Статьи» — там 45 составов с санкциями и поиском по номеру, слову или звёздам.'],
+      refs:['УК, особенная часть'] }
+  ]},
+
+  { id:'special', cat:'proc', name:'Особые случаи', nodes:[
+    { id:'sp1', title:'Госслужащий, WN, адвокат', body:[
+      'Вызвать руководство задержанного и прокуратуру. Заморозка до 15 минут; при ответе прокурора — до приезда.',
+      'Меру наказания избирает прокурор. Не приехал — освобождение и обращение в прокуратуру в течение 24 часов.'],
+      refs:['ПК 19'] },
+    { id:'sp2', title:'Неприкосновенность', body:[
+      'Подлежит освобождению. Исключение — действия создают непосредственную угрозу жизни и здоровью окружающих.'],
+      refs:['ПК 20 ч.1 п.д'] },
+    { id:'sp3', title:'Адвокат', body:[
+      'Частный — до 3 минут на вызов через приложение. Ждать 10 минут, дальше право реализовано.',
+      'Государственный — заявка на горячую линию Правительства. При отклике процессуальный час замораживается.'],
+      refs:['ПК 17 ч.3'] },
+    { id:'sp4', title:'Авто-боло', body:[
+      'Задержанный вправе показать свою фиксацию невиновности — обязан приобщить её к делу.',
+      'Просмотр фиксации приостанавливает процессуальный час максимум на 10 минут.'],
+      refs:['ПК 23 ч.1 п.г','ПК 20 ч.2 п.д'] },
+    { id:'sp5', title:'Федеральный розыск', body:[
+      'Объявляют Генпрокурор, его заместитель и судьи — по ордеру или решению суда.',
+      'Арест лица в федеральном розыске — отчёт в спецканал в течение 3 часов.'],
+      refs:['ПК 38'] },
+    { id:'sp6', title:'Маска и отказ от документов', body:[
+      'Требование снять маску и предъявить документы, при отказе — процедура установления личности.',
+      'Порядок: наручники → разъяснить причину → установить личность → личный обыск.'],
+      refs:['ПК 16 ч.3'] }
+  ]},
+
+  { id:'casework', cat:'case', name:'Следствие и кейс', nodes:[
+    { id:'c1', title:'Поводы возбудить дело', body:[
+      'Заявление о правонарушении, явка с повинной, сообщение из иных источников, непосредственное обнаружение данных.',
+      'Основание — достаточные данные, указывающие на признаки правонарушения.'],
+      refs:['ПК 71'] },
+    { id:'c2', title:'Следственные действия', body:[
+      'Допрос, осмотр, обыск, выемка, очная ставка, опознание, освидетельствование, проверка показаний, экспертиза, контроль переговоров, эксперимент, возбуждение дела, ОРМ, задержание.',
+      'До возбуждения дела — только неотложные действия.'],
+      refs:['ПК 50','ПК 46'] },
+    { id:'c3', title:'Допрос', body:[
+      'Не более 1 часа, по повестке — не ночью, повестка за 12 часов.',
+      'Аудио- или видеозапись обязательна, материалы при деле. Адвокат присутствует.'],
+      refs:['ПК 56'] },
+    { id:'c4', title:'Отчётность и передача', body:[
+      'Письменная отчётность — по регламенту или при передаче дела в суд; документы только электронно.',
+      'Не можешь вести дело — передай уполномоченному с изложением обстоятельств.'],
+      refs:['ПК 49','ПК 48'] },
+    { id:'c5', title:'Структура отчёта', body:[
+      'Дата и время IC; сотрудник и Static ID; фигурант и должность; основание; компетенция; хронология; Миранда; обыски и изъятое; статьи; решение; доказательства; свидетели; следующие шаги.'],
+      refs:['ПК 49'] },
+    { id:'c6', title:'Что ломает кейс', body:[
+      'Нет основания. Нет фиксации. Причина ареста — «нарушение». Срок не по статье. Забыт вызов прокуратуры при госслужащем.'],
+      refs:['ПК 20','ПК 23','ПК 19'] }
+  ]},
+
+  { id:'errors', cat:'check', name:'Ошибки', nodes:[
+    { id:'e1', title:'Нет основания', body:[
+      'Задержание без основания из ст. 16 ч. 2 — освобождение, разбор и состав по УК 16.4 «заведомо незаконное задержание».'],
+      refs:['ПК 16','УК 16.4'] },
+    { id:'e2', title:'Миранда после вопросов', body:[
+      'Зачитал права уже после того, как начал спрашивать, — всё сказанное уходит в недопустимые доказательства, а задержание становится уязвимым.'],
+      refs:['ПК 17 ч.2','ПК 12'] },
+    { id:'e3', title:'Обыск не по порядку', body:[
+      'Ценности и улики изымаются только при вторичном обыске в рамках ареста. Первичный обыск — про опасное для сотрудников и окружающих.'],
+      refs:['ПК 17 ч.1 п.в','ПК 27'] },
+    { id:'e4', title:'Нет записи', body:[
+      'Обязанность вести видеофиксацию прямо в кодексе. Без записи на разборе виноват сотрудник.'],
+      refs:['ПК 23','ПК 32'] },
+    { id:'e5', title:'Статья и срок на глазок', body:[
+      'Причина ареста — «нарушение» вместо статьи и части. Срок не совпадает со санкцией. Боло выставлен не по приоритету статьи.'],
+      refs:['УК 5','ПК 39'] },
+    { id:'e6', title:'Спецслучаи и жилище', body:[
+      'Забыл ст. 19 при госслужащем. Залез в жилище или нежилое без ордера. Взял региональную статью без одобрения компетенции.'],
+      refs:['ПК 19','ПК 4','ПК 35'] }
+  ]},
+
+  { id:'drill', cat:'check', name:'Дрилл и чек-лист', nodes:[
+    { id:'d1', title:'Дрилл на 10 минут', body:[
+      'Выпиши из кодекса срок задержания и 5 статей, которые будешь использовать чаще всего.',
+      'Прорепетируй вслух связку: приказ → наручники → удостоверение → обыск → Миранда → статья → арест. Три раза без запинки.'],
+      refs:[] },
+    { id:'d2', title:'Пять вопросов себе', body:[
+      'Чем задержание отличается от ареста? Какие 7 оснований задержания? Кто субъекты? Что зачитывается дважды? Что делает прокурор при задержании госслужащего?'],
+      refs:[] },
+    { id:'d3', title:'Чек-лист перед кафом', body:[
+      'Вкладка «Чек-лист» — 18 пунктов в порядке ст. 17. Отметки сохраняются, можно пройти на телефоне прямо перед задержанием.'],
+      refs:[] },
+    { id:'d4', title:'Что дальше', body:[
+      'Устав FIB и тему NSB читать отдельно: полномочия отдела, надзорные проверки, порядок кейс-файлов, рейды и внедрения в кодексах не описаны.'],
+      refs:[] }
+  ]}
+];
+
+/* ---------------- radial map ---------------- */
+const svg = document.getElementById('map');
+const vp = document.getElementById('viewport');
+const detail = document.getElementById('detail');
+const NS = 'http://www.w3.org/2000/svg';
+const R1 = 250;
+const staticR = 16;
+let expandedId = null;
+let selected = null;
+const learned = new Set(JSON.parse(localStorage.getItem('fib_nsb_learned') || '[]'));
+
+const totalNodes = MAP.reduce((n,b)=>n+b.nodes.length,0);
+
+function el(tag, attrs){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); return e; }
+function polar(a,r){ return [Math.cos(a)*r, Math.sin(a)*r]; }
+
+function leafPos(a, j, n){
+  const twoRows = n > 8;
+  const row = twoRows ? j % 2 : 0;
+  const idx = twoRows ? Math.floor(j / 2) : j;
+  const inRow = twoRows ? Math.ceil((n - row) / 2) : n;
+  const step = inRow > 1 ? Math.min(0.20, 1.5 / (inRow - 1)) : 0;
+  const off = (idx - (inRow - 1) / 2) * step;
+  const ang = a + off;
+  const r = twoRows ? (row === 0 ? 346 : 406) : 384;
+  const [x, y] = polar(ang, r);
+  return { x, y, ang, r };
+}
+
+function render(){
+  vp.textContent='';
+  const defs = el('defs');
+  vp.appendChild(defs);
+
+  // links first
+  const gLinks = el('g'); vp.appendChild(gLinks);
+  const gNodes = el('g'); vp.appendChild(gNodes);
+
+  const hub = el('g');
+  hub.setAttribute('class','node hub'); hub.setAttribute('tabindex','0');
+  hub.setAttribute('role','button');
+  hub.setAttribute('aria-label','Центр карты');
+  const hubDisc = el('circle',{class:'disc', cx:0, cy:0, r:74, fill:'#1b2a35', 'fill-opacity':1});
+  hub.appendChild(hubDisc);
+  const hubT = el('text',{class:'lbl','text-anchor':'middle',y:-4});
+  hubT.textContent='FIB · NSB';
+  hub.appendChild(hubT);
+  const hubT2 = el('text',{class:'lbl','text-anchor':'middle',y:16,'font-size':11});
+  hubT2.textContent=totalNodes+' узлов';
+  hub.appendChild(hubT2);
+  hub.addEventListener('click',()=>{ selectHub(); });
+  hub.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectHub(); }});
+  gNodes.appendChild(hub);
+
+  const n = MAP.length;
+  MAP.forEach((br, i)=>{
+    const a = -Math.PI/2 + i*(2*Math.PI/n);
+    const [bx,by] = polar(a,R1);
+    const color = CATS[br.cat].hex;
+    const isOpen = expandedId === br.id;
+
+    const link = el('path',{class:'link', d:`M ${polar(a,80)[0]} ${polar(a,80)[1]} Q ${bx*0.55} ${by*0.55} ${bx} ${by}`});
+    link.setAttribute('stroke', color); link.setAttribute('stroke-opacity','.5');
+    gLinks.appendChild(link);
+
+    // leaf links
+    if(isOpen){
+      br.nodes.forEach((nd, j)=>{
+        const { x:lx, y:ly } = leafPos(a, j, br.nodes.length);
+        const p = el('path',{class:'link leaf', d:`M ${bx} ${by} Q ${(bx+lx)/2 + (lx-bx)*0.24} ${(by+ly)/2 + (ly-by)*0.24} ${lx} ${ly}`});
+        p.setAttribute('stroke', color); p.setAttribute('stroke-opacity','.42');
+        gLinks.appendChild(p);
+      });
+    }
+
+    const g = el('g'); g.setAttribute('class','node'); g.setAttribute('tabindex','0');
+    g.setAttribute('role','button'); g.setAttribute('aria-label', br.name+' — '+br.nodes.length+' пунктов');
+    if(selected===br.id) g.setAttribute('data-selected','');
+    const r = 72;
+    const disc = el('circle',{class:'disc',cx:bx,cy:by,r:r,fill:color,'fill-opacity':'.16',stroke:color,'stroke-width':'1.6'});
+    g.appendChild(disc);
+    if(learned.has(br.id)){ g.appendChild(el('circle',{cx:bx+r*0.7,cy:by-r*0.7,r:5,fill:'#5d8a6b'})); }
+    const t = el('text',{class:'lbl','text-anchor':'middle',x:bx,y:by+3});
+    t.textContent = br.name;
+    g.appendChild(t);
+    const cnt = el('text',{class:'lbl','text-anchor':'middle',x:bx,y:by+22,'font-size':11,fill:color});
+    cnt.textContent = br.nodes.length + (isOpen?' −':' +');
+    g.appendChild(cnt);
+    g.addEventListener('click',()=>{ toggleBranch(br); });
+    g.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleBranch(br); }});
+    gNodes.appendChild(g);
+
+    // leaves: numbered dots, список с теми же номерами — в панели справа
+    if(isOpen){
+      br.nodes.forEach((nd,j)=>{
+        const { x:lx, y:ly } = leafPos(a, j, br.nodes.length);
+        const lg = el('g'); lg.setAttribute('class','node leaf'); lg.setAttribute('tabindex','0');
+        lg.setAttribute('role','button'); lg.setAttribute('aria-label', (j+1)+'. '+nd.title);
+        if(selected===nd.id) lg.setAttribute('data-selected','');
+        lg.appendChild(el('circle',{class:'disc',cx:lx,cy:ly,r:staticR,fill:color,'fill-opacity':'.18',stroke:color,'stroke-width':'1.3'}));
+        const num = el('text',{class:'lbl','text-anchor':'middle',x:lx,y:ly+5,'font-size':14,fill:'#e9f0f5'});
+        num.textContent = String(j+1).padStart(2,'0');
+        lg.appendChild(num);
+        const tip = document.createElementNS(NS,'title');
+        tip.textContent = nd.title;
+        lg.appendChild(tip);
+        if(learned.has(nd.id)){ lg.appendChild(el('circle',{cx:lx+13,cy:ly-13,r:4,fill:'#5d8a6b'})); }
+        lg.addEventListener('click',(ev)=>{ ev.stopPropagation(); selectNode(br,nd); });
+        lg.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectNode(br,nd); }});
+        lg.addEventListener('mouseenter',()=>{ lg.querySelector('.disc').setAttribute('fill-opacity','.42'); });
+        lg.addEventListener('mouseleave',()=>{ if(selected!==nd.id) lg.querySelector('.disc').setAttribute('fill-opacity','.18'); });
+        gNodes.appendChild(lg);
+        if(selected===nd.id) lg.querySelector('.disc').setAttribute('fill-opacity','.55');
+      });
+    }
+  });
+
+  // legend
+  const legend = document.getElementById('legend');
+  if(!legend.dataset.done){
+    legend.innerHTML = Object.values(CATS).map(c=>`<span><i style="background:${c.hex}"></i>${c.name}</span>`).join('');
+    legend.dataset.done='1';
+  }
+  updateProgress();
+}
+
+function toggleBranch(br){
+  const opening = expandedId !== br.id;
+  expandedId = opening ? br.id : null;
+  selected = br.id;
+  render();
+  showBranch(br);
+  fit();
+}
+
+function fit(){
+  const rect = svg.getBoundingClientRect();
+  const w = rect.width || 1000, h = rect.height || 800;
+  const k = Math.min(w, h) / 1320;
+  const R = expandedId ? 432 : 348;
+  scale = Math.max(0.3, Math.min(3, ((Math.min(w, h) / 2) * 0.94) / (R * k)));
+  tx = 0; ty = 0;
+  apply();
+}
+
+function selectNode(br, nd){
+  selected = nd.id;
+  render();
+  showNode(br, nd);
+}
+
+function selectHub(){
+  selected=null; expandedId=null; render(); fit();
+  detail.innerHTML = `
+    <p class="eyebrow">Сводка</p>
+    <h2>Восемь веток, ${totalNodes} узлов</h2>
+    <p class="meta">клик по ветке раскрывает пункты</p>
+    <div class="empty">
+      <p>Слева — карта знаний: от подготовки смены до отчёта по кейсу. Раскрой ветку, открой пункт и отметь его как изученный: счётчик сверху покажет, сколько осталось.</p>
+      <p><b>Порядок прохождения:</b> Правовой каркас → Каф: 10 шагов → Квалификация → Особые случаи → Следствие и кейс → Ошибки → Дрилл.</p>
+    </div>
+    <div style="border-top:1px solid rgba(32,38,44,.22);margin:18px 0 0;padding-top:14px">
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#5b6169"><b style="color:#20262c">Неофициальная памятка.</b> Собрана по действующим редакциям ПК и УК Phoenix (апрель 2026). Устав фракции и регламент NSB главнее этой страницы: где расходится — прав устав. На других серверах Majestic номера статей отличаются.</p>
+    </div>
+    <div class="card-index">
+      <h3>Содержание</h3>
+      <ol>${MAP.map(b=>`<li><button data-go="${b.id}"><span>${b.name}</span><span class="ok">${b.nodes.filter(x=>learned.has(x.id)).length}/${b.nodes.length}</span></button></li>`).join('')}</ol>
+    </div>`;
+  detail.querySelectorAll('[data-go]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const br = MAP.find(b=>b.id===btn.dataset.go);
+      expandedId = br.id; selected=br.id; render(); showBranch(br); fit();
+    });
+  });
+}
+
+function showBranch(br){
+  const color = CATS[br.cat].hex;
+  const done = br.nodes.filter(x=>learned.has(x.id)).length;
+  detail.innerHTML = `
+    <p class="eyebrow"><span class="cat" style="color:${color};border-color:${color}">${CATS[br.cat].name}</span> ветка</p>
+    <h2>${br.name}</h2>
+    <p class="meta">${done} из ${br.nodes.length} отмечено</p>
+    <div class="card-index" style="border-top:none;padding-top:0;margin-top:0">
+      <ol>${br.nodes.map(nd=>`<li><button data-node="${nd.id}"><span>${nd.title}</span>${learned.has(nd.id)?'<span class="ok">✓</span>':''}</button></li>`).join('')}</ol>
+    </div>`;
+  detail.querySelectorAll('[data-node]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const nd = br.nodes.find(x=>x.id===b.dataset.node);
+      selectNode(br,nd);
+    });
+  });
+}
+
+function showNode(br, nd){
+  const color = CATS[br.cat].hex;
+  const isL = learned.has(nd.id);
+  detail.innerHTML = `
+    <p class="eyebrow"><span class="cat" style="color:${color};border-color:${color}">${CATS[br.cat].name}</span> ${br.name}</p>
+    <h2>${nd.title}</h2>
+    <div class="refs">${nd.refs.map(r=>`<span class="ref">${r}</span>`).join('') || '<span class="ref" style="background:transparent;border-color:rgba(32,38,44,.25);color:#5b6169">практика</span>'}</div>
+    <ul>${nd.body.map(p=>`<li>${p}</li>`).join('')}</ul>
+    <button class="mark" id="markBtn" aria-pressed="${isL}">${isL?'Изучено':'Отметить изученным'}</button>
+  `;
+  document.getElementById('markBtn').addEventListener('click',()=>{
+    if(learned.has(nd.id)) learned.delete(nd.id); else learned.add(nd.id);
+    localStorage.setItem('fib_nsb_learned', JSON.stringify([...learned]));
+    render(); showNode(br,nd);
+  });
+}
+
+function updateProgress(){
+  const n = learned.size;
+  document.getElementById('progN').textContent = n + ' / ' + totalNodes;
+  const ring = document.getElementById('ringFg');
+  const C = 2*Math.PI*15;
+  ring.setAttribute('stroke-dasharray', C.toFixed(1));
+  ring.setAttribute('stroke-dashoffset', (C*(1 - Math.min(1,n/totalNodes))).toFixed(1));
+}
+
+/* pan & zoom */
+let scale=1, tx=0, ty=0, dragging=false, sx=0, sy=0;
+function apply(){ vp.setAttribute('transform',`translate(${tx} ${ty}) scale(${scale})`); }
+svg.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const f = e.deltaY < 0 ? 1.12 : 0.89;
+  scale = Math.min(2.6, Math.max(0.42, scale*f));
+  apply();
+},{passive:false});
+svg.addEventListener('pointerdown', e=>{
+  if(e.target.closest('.node')) return;
+  dragging=true; sx=e.clientX-tx; sy=e.clientY-ty; svg.classList.add('dragging'); svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  tx=e.clientX-sx; ty=e.clientY-sy; apply();
+});
+svg.addEventListener('pointerup', ()=>{ dragging=false; svg.classList.remove('dragging'); });
+document.getElementById('zin').onclick=()=>{ scale=Math.min(2.6,scale*1.18); apply(); };
+document.getElementById('zout').onclick=()=>{ scale=Math.max(0.42,scale/1.18); apply(); };
+document.getElementById('zreset').onclick=()=>{ fit(); };
+
+/* ---------------- steps ---------------- */
+const STEPS = [
+ {law:'ПК 16 ч.2 · основание', title:'Основание одной фразой',
+  text:'Ты должен уметь сказать: что произошло, какая статья, откуда ты знаешь. Без этого задержание незаконно.',
+  list:['Застигнут при совершении или сразу после.','Следы на нём, одежде, при нём или в жилище.','Фото или видеофиксация.','Ордер на задержание.','Ориентировка на лицо или транспорт.','Лицо в боло-розыске.','Умышленно скрывает личность без законных оснований.'],
+  code:'/me обратил внимание на гражданина, который ...\n/do Гражданин находится в боло-розыске, уровень 3?' },
+ {law:'ПК 37 · стадии силы', title:'Приказ и задержание',
+  text:'Устное требование — стадия 2. Если бежит — тазер или дубинка (стадия 3–4), огнестрел только при угрозе жизни.',
+  list:['Требование: остановиться, руки на виду.','Фиксация реакции в /do.','Бежит — тазер, не более 3 применений.','Наручники: G → Фракционное → Надеть наручники.'],
+  code:'/me направил оружие в сторону гражданина и потребовал остановиться\n/do Гражданин слышит требование и останавливается?' },
+ {law:'ПК 17 ч.1 п.б', title:'Удостоверение',
+  text:'Предъявляешь служебное удостоверение, жетон или бейдж — до процессуальных действий.',
+  list:['Назвать отдел и звание.','Предъявить удостоверение в /me.'],
+  code:'/me продемонстрировал служебное удостоверение сотрудника FIB' },
+ {law:'ПК 17 ч.1 п.в', title:'Первичный обыск',
+  text:'Ищем колюще-режущее, огнестрел, наркотики, взрывчатку. Опасное изымать разрешено сразу — это не обыск «на месте» из старых памяток.',
+  list:['Документы смотреть можно.','Ценности и улики — не здесь, а при вторичном обыске.','Всё изъятое фиксировать в /do.'],
+  code:'/me провёл первичный обыск задержанного\n/do При задержанном обнаружен пистолет без лицензии?' },
+ {law:'ПК 17 ч.2 · Миранда', title:'Миранда',
+  text:'Зачитывается после задержания и до любых вопросов. Второй раз — только если не понял, с уведомлением, что больше не будут.',
+  list:['Перебивает или оскорбляет — второй раз можно не читать.','Факт зачитывания фиксировать всегда.'],
+  code:'«Вы имеете право хранить молчание. Всё, что вы скажете, может и будет\nиспользовано против Вас в суде. Вы имеете право на один телефонный\nзвонок. Также Вы имеете право на адвоката. Если вам необходим адвокат,\nон будет для Вас запрошен. Вы понимаете свои права?»\n/do Задержанный ознакомлен с правилом Миранды, права понял?' },
+ {law:'ПК 17 ч.1 п.д', title:'Идентификация и проверки',
+  text:'Личность, федеральный розыск, принадлежность к госорганам — по бейджу, удостоверению или базе данных.',
+  list:['Проверить статик и историю задержаний.','Убедиться, не госслужащий ли перед тобой — от этого зависит ст. 19.'],
+  code:'/me сверил данные задержанного с базой данных штата\n/do Гражданин ранее не судим, в федеральном розыске не значится?' },
+ {law:'ПК 17 ч.1 п.е', title:'Доставка',
+  text:'В участок, департамент шерифа, штаб-квартиру FIB или иное место следствия — если нужен допрос или экспертиза.',
+  list:['Посадить в авто через меню взаимодействия.','Обыскать транспорт, если есть основание.'],
+  code:'/me усадил задержанного на заднее сиденье служебного автомобиля' },
+ {law:'ПК 17 ч.1 п.ж · ПК 19 · ПК 22', title:'Права и особый случай',
+  text:'Адвокат: 3 минуты на вызов, ждать 10. Звонок: до 3 минут. Госслужащий, WN или адвокат — руководство и прокуратура, заморозка до 15 минут.',
+  list:['Прокурор не приехал — освобождение и обращение в прокуратуру в течение 24 часов.','Меру наказания госслужащему избирает прокурор, а не ты.'],
+  code:'/me предоставил задержанному возможность осуществить телефонный звонок\n/do Задержанный воспользовался правом на звонок (до 3 минут)?' },
+ {law:'ПК 27 · вторичный обыск', title:'Вторичный обыск и статьи',
+  text:'Изъять всё нелегальное, а также оружие, спецсредства и боеприпасы независимо от законности хранения.',
+  list:['Боло: 1 год = 1 уровень.','Статья называется вслух; ★ = годы; несколько статей — срок складывается.'],
+  code:'/me провёл вторичный обыск задержанного\n/do Изъято: пистолет, 30 патронов, 4 г марихуаны?' },
+ {law:'ПК 27 · ПК 49', title:'Оформление и отчёт',
+  text:'Меню ареста: срок по статье, залог, судимость при ★★★★+, причина — статья и конкретное деяние.',
+  list:['Залог: 25 000 $ + 25 000 $ за ★.','Отчёт: основание, хронология, изъятое, статьи, доказательства, следующие шаги.'],
+  code:'G → Фракционное → Арест\nПричина: ст. 12.8 ч. 2 УК — незаконное ношение оружия' }
+];
+document.getElementById('stepsList').innerHTML = STEPS.map((s,i)=>`
+  <div class="step" data-n="${i+1}">
+    <h3>${s.title}</h3>
+    <p class="law">${s.law}</p>
+    <p>${s.text}</p>
+    <ul>${s.list.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <pre>${s.code.replace(/</g,'&lt;')}</pre>
+  </div>`).join('');
+
+/* ---------------- articles ---------------- */
+const UK = [
+ ['6.1 ч.1','побои, лёгкий или средний вред здоровью',3,'3 года'],
+ ['6.1 ч.2','тяжкий вред здоровью',4,'4 года'],
+ ['6.2 ч.1','убийство',4,'4 года'],
+ ['6.2 ч.2','смерть по неосторожности / в аффекте',3,'3 года'],
+ ['6.3','тяжкое убийство (2+ лиц, по службе, группой)',5,'5 лет'],
+ ['6.4','угроза убийством или тяжким вредом',3,'3 года или 30–50 тыс.'],
+ ['7.1','похищение человека (федеральная)',5,'5 лет'],
+ ['7.1.1','незаконное лишение свободы (федеральная)',4,'4 года'],
+ ['7.4','клевета',3,'2–3 года или 40–80 тыс.'],
+ ['10.1','кража свыше 15 000 $',3,'3 года'],
+ ['10.1.1','кража со взломом',4,'4 года'],
+ ['10.2','мошенничество',3,'3 года'],
+ ['10.2.1','вымогательство',3,'3 года'],
+ ['10.3','грабёж (открытое хищение)',3,'3 года'],
+ ['10.4','разбой с насилием',4,'4 года'],
+ ['10.5','угон транспорта',3,'до 3 лет'],
+ ['10.6','умышленное уничтожение чужого имущества',3,'3 года'],
+ ['10.8','уничтожение госимущества из хулиганских побуждений',3,'3 года'],
+ ['12.1','терроризм (федеральная)',5,'5 лет'],
+ ['12.1.1','призывы к терроризму, оправдание',5,'5 лет'],
+ ['12.3','заведомо ложное сообщение об акте терроризма',4,'4 года'],
+ ['12.4','экстремизм (федеральная)',5,'5 лет'],
+ ['12.5','организация экстремистской организации',5,'5 лет'],
+ ['12.6.1','массовые беспорядки',5,'5 лет'],
+ ['12.7 ч.1','охраняемый объект',3,'3 года или 20–50 тыс.'],
+ ['12.7 ч.2','особо охраняемый объект',4,'4–5 лет или 60–80 тыс.'],
+ ['12.8','оборот оружия и спецсредств',4,'4 года или 10–30 тыс.'],
+ ['12.8.1','спецсредство гос. образца у гражданского',5,'5 лет'],
+ ['12.9','взрывчатые вещества и устройства',5,'5 лет'],
+ ['12.10','хищение оружия и спецсредств',4,'4 года'],
+ ['12.11','незаконное вооружённое формирование',5,'5 лет'],
+ ['12.12','организация преступного сообщества',5,'5 лет'],
+ ['12.13','получение гостайны незаконным способом',5,'5 лет'],
+ ['13.1','кустарное производство наркотиков',3,'3 года или 20–40 тыс.'],
+ ['13.2','наркотики от 3 грамм',4,'4 года или 40–60 тыс.'],
+ ['13.2.1','свыше 25 грамм или на сбыт',5,'5 лет'],
+ ['13.4','наркотики у сотрудника госструктур',5,'5 лет'],
+ ['13.5 ч.1','грузы с поддельными документами',3,'3 года или 25–50 тыс.'],
+ ['14.1','дискредитация госорганов',5,'5 лет'],
+ ['14.2','захват власти, мятеж',5,'5 лет'],
+ ['14.3','разглашение гостайны (федеральная)',4,'4 года'],
+ ['15.1 ч.1','превышение должностных полномочий',4,'4 года или 40–100 тыс.'],
+ ['15.1 ч.2','то же с насилием, оружием, тяжкими последствиями',5,'5 лет'],
+ ['15.1.1','злоупотребление должностными полномочиями',5,'5 лет или 50–100 тыс.'],
+ ['15.2','неисполнение приказа или акта',4,'4 года или 30–40 тыс.'],
+ ['15.3 ч.2','присвоение атрибутов должностного лица',3,'3 года или 30–60 тыс.'],
+ ['15.4','получение взятки',5,'5 лет'],
+ ['15.5','дача взятки',5,'5 лет'],
+ ['15.5.1','посредничество во взяточничестве',5,'5 лет'],
+ ['15.6 ч.1','халатность',4,'4 года или 40–70 тыс.'],
+ ['15.6 ч.2','халатность с тяжким вредом или смертью',5,'5 лет'],
+ ['15.7','деструктивное поведение должностного лица',3,'3 года или 30–70 тыс.'],
+ ['16.1','воспрепятствование правосудию и следствию',4,'4 года'],
+ ['16.3','привлечение заведомо невиновного',5,'5 лет'],
+ ['16.4','заведомо незаконное задержание',5,'5 лет'],
+ ['16.6','фальсификация доказательств по уголовному делу',5,'5 лет'],
+ ['16.8','заведомо ложные показания в суде',4,'4 года'],
+ ['16.10 ч.1','неисполнение ордера, решения суда, адвокатского запроса',4,'4 года или 30–70 тыс.'],
+ ['16.11','сокрытие или уничтожение улик',4,'4 года'],
+ ['16.12','уклонение от расследования, задержания и суда',4,'4 года'],
+ ['16.13.1','ложные показания должностному лицу на допросе',4,'4 года'],
+ ['16.14','отказ свидетеля от показаний',3,'3 года'],
+ ['16.15','уклонение от отбывания наказания',0,'10–19 суток КПЗ или 2–5 лет'],
+ ['17.1','посягательство на жизнь сотрудника',5,'5 лет'],
+ ['17.2','насилие или угроза в отношении сотрудника',4,'4 года'],
+ ['17.3','оскорбление представителя власти',3,'3 года или 20–50 тыс.'],
+ ['17.4','провокация или помеха госслужащему',3,'3 года или 20–60 тыс.'],
+ ['17.5 ч.1','самоуправство',3,'3 года'],
+ ['17.6','неповиновение законному требованию',3,'3 года или 20–60 тыс.'],
+ ['17.7','отказ от оплаты штрафа',3,'3 года или 20–60 тыс.'],
+ ['17.8','подделка удостоверения или лицензии',4,'4 года']
+];
+const ukbody = document.getElementById('ukbody');
+function renderUK(filter=''){
+  const q = filter.trim().toLowerCase();
+  const rows = UK.filter(r=>!q || (r[0]+' '+r[1]+' '+r[2]).toLowerCase().includes(q));
+  ukbody.innerHTML = rows.map(r=>`<tr>
+      <td class="art">${r[0]}</td>
+      <td>${r[1]}</td>
+      <td class="st">${r[2]?'★'.repeat(r[2]):'—'}</td>
+      <td class="pen">${r[3]}</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="color:var(--text-dim);padding:16px 0">Ничего не найдено</td></tr>';
+  document.getElementById('ukcount').textContent = rows.length + ' из ' + UK.length;
+}
+renderUK();
+document.getElementById('uksearch').addEventListener('input', e=>renderUK(e.target.value));
+
+/* ---------------- checklist ---------------- */
+const CHECK = [
+ ['Основание сформулировано одной фразой','ПК 16 ч.2 — один из семи пунктов'],
+ ['Приказ отдан, реакция зафиксирована в /do','стадия 2 применения силы'],
+ ['Наручники надеты, действие отыграно','/me + /do'],
+ ['Удостоверение предъявлено','ПК 17 ч.1 п.б'],
+ ['Первичный обыск проведён, опасное изъято','ПК 17 ч.1 п.в'],
+ ['Миранда зачитана и зафиксирована','ПК 17 ч.2'],
+ ['Личность, розыск и принадлежность к госорганам проверены','ПК 17 ч.1 п.д'],
+ ['Видеофиксация идёт','ПК 23, 32'],
+ ['Госслужащий? — вызваны руководство и прокуратура','ПК 19'],
+ ['Права реализованы: звонок до 3 мин, адвокат до 10 мин','ПК 17 ч.3, 22'],
+ ['Вторичный обыск проведён, изъятое перечислено','ПК 27'],
+ ['Статья названа вслух, соответствует деянию','УК, особенная часть'],
+ ['Уровень боло равен приоритету статьи','ПК 27, 39'],
+ ['Срок ареста соответствует санкции','УК 5'],
+ ['Залог рассчитан: 25 000 + 25 000 за ★','ПК 34'],
+ ['Отметка о судимости поставлена при ★★★★+','УК 5.8'],
+ ['Причина ареста — статья и конкретное деяние','ПК 27'],
+ ['Отчёт или кейс оформлен, фиксация сохранена 72 ч','ПК 33, 49']
+];
+const saved = new Set(JSON.parse(localStorage.getItem('fib_nsb_check') || '[]'));
+const checkList = document.getElementById('checkList');
+checkList.innerHTML = CHECK.map((c,i)=>`
+  <div class="check-item">
+    <input type="checkbox" id="c${i}" ${saved.has(i)?'checked':''}>
+    <label for="c${i}">${c[0]}<span class="why">${c[1]}</span></label>
+  </div>`).join('');
+function updCheck(){
+  const n = saved.size;
+  document.getElementById('checkBar').style.width = (100*n/CHECK.length)+'%';
+}
+checkList.addEventListener('change', e=>{
+  if(e.target.type!=='checkbox') return;
+  const i = Number(e.target.id.slice(1));
+  if(e.target.checked) saved.add(i); else saved.delete(i);
+  localStorage.setItem('fib_nsb_check', JSON.stringify([...saved]));
+  updCheck();
+});
+updCheck();
+
+/* ---------------- tabs ---------------- */
+const tabs = [
+  ['tab-map','pane-map'], ['tab-steps','pane-steps'],
+  ['tab-articles','pane-articles'], ['tab-check','pane-check']
+];
+tabs.forEach(([t,p])=>{
+  document.getElementById(t).addEventListener('click',()=>{
+    tabs.forEach(([tt,pp])=>{
+      const on = tt===t;
+      document.getElementById(tt).setAttribute('aria-selected', on?'true':'false');
+      const pane = document.getElementById(pp);
+      if(on) pane.setAttribute('data-active',''); else pane.removeAttribute('data-active');
+    });
+  });
+});
+
+/* boot */
+render(); apply(); selectHub();
+</script>
+</body>
+</html>
