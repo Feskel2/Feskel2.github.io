@@ -2,8 +2,8 @@
 
 Сайт-памятка для новых сотрудников **FIB · NSB** на Majestic RP (Phoenix): карта знаний, процедура задержания по шагам, статьи УК с санкциями, чек-лист и подробная инструкция.
 
-**Сайт:** https://feskel2.github.io/fibnsb/
-**Инструкция:** https://feskel2.github.io/fibnsb/guide.html
+**Сайт:** https://feskel2.github.io/  (зеркало: https://feskel2.github.io/fibnsb/)
+**Инструкция:** https://feskel2.github.io/guide.html
 
 ## Что внутри
 
