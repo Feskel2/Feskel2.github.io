@@ -252,6 +252,30 @@
     section.pane{display:block !important}
     .step{page-break-inside:avoid}
   }
+  /* избранное и пояснения в статьях */
+  .tablewrap{max-width:100%; overflow-x:auto; margin:0 0 20px}
+  table.uk{min-width:620px}
+  table.uk th.favcol, table.uk td.favcol{width:36px; padding-right:4px}
+  .favbtn{background:none; border:none; color:rgba(159,176,189,.4); font-size:16px; line-height:1; cursor:pointer; padding:2px 4px; border-radius:2px}
+  .favbtn:hover{color:#e6edf2}
+  .favbtn.on{color:var(--brass)}
+  .favbtn:focus-visible{outline:2px solid var(--brass); outline-offset:2px}
+  tr.ukrow{cursor:pointer}
+  tr.ukrow.fav td{background:rgba(201,164,69,.06)}
+  tr.ukrow.open td{border-bottom-color:transparent}
+  tr.ukdetail td{padding:0 0 12px}
+  .uknote{background:#0f1820; border:1px solid rgba(159,176,189,.16); border-left:3px solid var(--brass); padding:12px 14px; font-size:14px; color:var(--text)}
+  .uknote p{margin:0 0 8px}
+  .uknote p:last-of-type{margin-bottom:10px}
+  .uknote .ex{color:#cfdae2}
+  .uknote .srclink{font-size:12.5px; color:var(--brass); text-decoration:none; border-bottom:1px dotted rgba(201,164,69,.6)}
+  .uknote .srclink:hover{color:#e6edf2}
+  .empty-cell{color:var(--text-dim); padding:16px 0}
+  .hintline{font-size:12px; color:var(--text-dim); margin:-4px 0 16px; max-width:820px}
+  aside#detail a.ref{text-decoration:none; border-bottom:1px dotted rgba(201,164,69,.65); cursor:pointer}
+  aside#detail a.ref:hover{background:rgba(201,164,69,.28)}
+  aside#detail .ref.muted{background:transparent; border-color:rgba(32,38,44,.25); color:#5b6169}
+  .node .leaf-lbl{font-family:var(--font-body); letter-spacing:0}
 </style>
 </head>
 <body>
@@ -304,16 +328,19 @@
   <section class="pane" id="pane-articles" role="tabpanel" aria-labelledby="tab-articles">
     <div class="pane-head">
       <h2>Статьи, которые ты инкриминируешь</h2>
-      <p>Уголовный кодекс Houston, ред. 2026. ★ = год лишения свободы. Судимость ставится с ★★★★. Уголовный штраф — альтернатива, если она указана в статье.</p>
+      <p>Уголовный кодекс Houston, ред. 2026. ★ = год лишения свободы. Судимость ставится при 4★ суммарно или сроке от 40 месяцев (УК 5.8). Уголовный штраф — альтернатива, если указан в санкции.</p>
     </div>
     <div class="tools">
       <input id="uksearch" type="search" placeholder="Поиск: номер статьи, слово, звёзды…" aria-label="Поиск по статьям">
       <div class="count" id="ukcount"></div>
     </div>
+    <p class="hintline">★ — закрепить статью сверху, список сохраняется на устройстве. Клик по строке — пояснение простыми словами и пример.</p>
+    <div class="tablewrap">
     <table class="uk">
-      <thead><tr><th>Статья</th><th>Состав</th><th>★</th><th>Наказание</th></tr></thead>
+      <thead><tr><th class="favcol" aria-label="Избранное"></th><th>Статья</th><th>Состав</th><th>★</th><th>Наказание</th></tr></thead>
       <tbody id="ukbody"></tbody>
     </table>
+    </div>
   </section>
 
   <section class="pane" id="pane-check" role="tabpanel" aria-labelledby="tab-check">
@@ -336,6 +363,10 @@ const CATS = {
   case:  {name:'Дело',       color:'var(--steel)', hex:'#6a8aa6'},
   check: {name:'Проверка',   color:'var(--plum)',  hex:'#96647e'}
 };
+
+const PK_URL = 'https://forum.majestic-rp.ru/threads/protsessual-nyi-kodeks-shtata-san-andreas.3670916/';
+const UK_URL = 'https://forum.majestic-rp.ru/threads/ugolovnyi-kodeks-shtata-san-andreas.3670936/';
+const refUrl = (r) => /^ПК/i.test(r) ? PK_URL : /^УК/i.test(r) ? UK_URL : null;
 
 const MAP = [
  {
@@ -1005,6 +1036,8 @@ const NS = 'http://www.w3.org/2000/svg';
 const R1 = 250;
 const staticR = 16;
 let expandedId = null;
+let contentExtent = 348;
+let contentBBox = null;
 let selected = null;
 const learned = new Set(JSON.parse(localStorage.getItem('fib_nsb_learned') || '[]'));
 
@@ -1013,21 +1046,18 @@ const totalNodes = MAP.reduce((n,b)=>n+b.nodes.length,0);
 function el(tag, attrs){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); return e; }
 function polar(a,r){ return [Math.cos(a)*r, Math.sin(a)*r]; }
 
-function leafPos(a, j, n){
-  const twoRows = n > 8;
-  const row = twoRows ? j % 2 : 0;
-  const idx = twoRows ? Math.floor(j / 2) : j;
-  const inRow = twoRows ? Math.ceil((n - row) / 2) : n;
-  const step = inRow > 1 ? Math.min(0.20, 1.5 / (inRow - 1)) : 0;
-  const off = (idx - (inRow - 1) / 2) * step;
-  const ang = a + off;
-  const r = twoRows ? (row === 0 ? 346 : 406) : 384;
-  const [x, y] = polar(ang, r);
-  return { x, y, ang, r };
+function listPos(bx, by, a, j, n){
+  const side = Math.cos(a) >= 0 ? 1 : -1;
+  const rowH = 44;
+  const x = side * 340;
+  const y = by - ((n - 1) * rowH) / 2 + j * rowH;
+  return { x, y, side };
 }
 
 function render(){
   vp.textContent='';
+  contentExtent = 348;
+  contentBBox = null;
   const defs = el('defs');
   vp.appendChild(defs);
 
@@ -1065,7 +1095,7 @@ function render(){
     // leaf links
     if(isOpen){
       br.nodes.forEach((nd, j)=>{
-        const { x:lx, y:ly } = leafPos(a, j, br.nodes.length);
+        const { x:lx, y:ly } = listPos(bx, by, a, j, br.nodes.length);
         const p = el('path',{class:'link leaf', d:`M ${bx} ${by} Q ${(bx+lx)/2 + (lx-bx)*0.24} ${(by+ly)/2 + (ly-by)*0.24} ${lx} ${ly}`});
         p.setAttribute('stroke', color); p.setAttribute('stroke-opacity','.42');
         gLinks.appendChild(p);
@@ -1075,41 +1105,64 @@ function render(){
     const g = el('g'); g.setAttribute('class','node'); g.setAttribute('tabindex','0');
     g.setAttribute('role','button'); g.setAttribute('aria-label', br.name+' — '+br.nodes.length+' пунктов');
     if(selected===br.id) g.setAttribute('data-selected','');
-    const r = 72;
-    const disc = el('circle',{class:'disc',cx:bx,cy:by,r:r,fill:color,'fill-opacity':'.16',stroke:color,'stroke-width':'1.6'});
+    const r = (expandedId && !isOpen) ? 34 : 72;
+    const disc = el('circle',{class:'disc',cx:bx,cy:by,r:r,fill:color,'fill-opacity': isOpen ? '.22' : (expandedId ? '.07' : '.16'), stroke:color,'stroke-width':'1.6'});
     g.appendChild(disc);
     if(learned.has(br.id)){ g.appendChild(el('circle',{cx:bx+r*0.7,cy:by-r*0.7,r:5,fill:'#5d8a6b'})); }
-    const t = el('text',{class:'lbl','text-anchor':'middle',x:bx,y:by+3});
+    const t = el('text',{class:'lbl','text-anchor':'middle',x:bx,y:by+3, 'font-size': isOpen ? 15 : (expandedId ? 12 : 15)});
     t.textContent = br.name;
     g.appendChild(t);
-    const cnt = el('text',{class:'lbl','text-anchor':'middle',x:bx,y:by+22,'font-size':11,fill:color});
-    cnt.textContent = br.nodes.length + (isOpen?' −':' +');
+    const cnt = el('text',{class:'lbl','text-anchor':'middle',x:bx,y:by+(expandedId && !isOpen ? 26 : 22),'font-size': expandedId && !isOpen ? 10 : 11,fill:color});
+    cnt.textContent = (expandedId && !isOpen) ? '' : br.nodes.length + (isOpen ? ' −' : ' +');
     g.appendChild(cnt);
     g.addEventListener('click',()=>{ toggleBranch(br); });
     g.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleBranch(br); }});
     gNodes.appendChild(g);
 
-    // leaves: numbered dots, список с теми же номерами — в панели справа
+    // leaves: номер в кружке + заголовок рядом, как «01 Задержание — 1 час»
     if(isOpen){
       br.nodes.forEach((nd,j)=>{
-        const { x:lx, y:ly } = leafPos(a, j, br.nodes.length);
+        const { x:lx, y:ly, side } = listPos(bx, by, a, j, br.nodes.length);
+        const right = side > 0;
         const lg = el('g'); lg.setAttribute('class','node leaf'); lg.setAttribute('tabindex','0');
         lg.setAttribute('role','button'); lg.setAttribute('aria-label', (j+1)+'. '+nd.title);
         if(selected===nd.id) lg.setAttribute('data-selected','');
         lg.appendChild(el('circle',{class:'disc',cx:lx,cy:ly,r:staticR,fill:color,'fill-opacity':'.18',stroke:color,'stroke-width':'1.3'}));
-        const num = el('text',{class:'lbl','text-anchor':'middle',x:lx,y:ly+5,'font-size':14,fill:'#e9f0f5'});
+        const num = el('text',{class:'lbl','text-anchor':'middle',x:lx,y:ly+4.5,'font-size':12.5,fill:'#e9f0f5'});
         num.textContent = String(j+1).padStart(2,'0');
         lg.appendChild(num);
+        const labelX = lx + (right ? 24 : -24);
+        const showLabels = window.innerWidth > 700;
+        const lt = el('text',{class:'lbl leaf-lbl','text-anchor': right ? 'start' : 'end', x: labelX, y: ly + 5, 'font-size': 16, fill: '#cfdae2'});
+        lt.textContent = showLabels ? nd.title : '';
+        lg.appendChild(lt);
         const tip = document.createElementNS(NS,'title');
-        tip.textContent = nd.title;
+        tip.textContent = (j+1)+'. '+nd.title;
         lg.appendChild(tip);
         if(learned.has(nd.id)){ lg.appendChild(el('circle',{cx:lx+13,cy:ly-13,r:4,fill:'#5d8a6b'})); }
+        const bw = 30 + (showLabels ? nd.title.length * 7.3 : 0);
+        contentBBox = contentBBox || { x1: bx - r - 20, y1: by - r - 20, x2: bx + r + 20, y2: by + r + 20 };
+        contentBBox.x1 = Math.min(contentBBox.x1, lx - 40);
+        contentBBox.x2 = Math.max(contentBBox.x2, lx + (right ? bw : -bw + 40));
+        contentBBox.y1 = Math.min(contentBBox.y1, ly - 26);
+        contentBBox.y2 = Math.max(contentBBox.y2, ly + 26);
         lg.addEventListener('click',(ev)=>{ ev.stopPropagation(); selectNode(br,nd); });
         lg.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectNode(br,nd); }});
-        lg.addEventListener('mouseenter',()=>{ lg.querySelector('.disc').setAttribute('fill-opacity','.42'); });
-        lg.addEventListener('mouseleave',()=>{ if(selected!==nd.id) lg.querySelector('.disc').setAttribute('fill-opacity','.18'); });
+        lg.addEventListener('mouseenter',()=>{
+          lg.querySelector('.disc').setAttribute('fill-opacity','.42');
+          lg.querySelector('.leaf-lbl').setAttribute('fill','#fff');
+        });
+        lg.addEventListener('mouseleave',()=>{
+          if(selected!==nd.id){
+            lg.querySelector('.disc').setAttribute('fill-opacity','.18');
+            lg.querySelector('.leaf-lbl').setAttribute('fill','#cfdae2');
+          }
+        });
         gNodes.appendChild(lg);
-        if(selected===nd.id) lg.querySelector('.disc').setAttribute('fill-opacity','.55');
+        if(selected===nd.id){
+          lg.querySelector('.disc').setAttribute('fill-opacity','.55');
+          lg.querySelector('.leaf-lbl').setAttribute('fill','#fff');
+        }
       });
     }
   });
@@ -1136,9 +1189,18 @@ function fit(){
   const rect = svg.getBoundingClientRect();
   const w = rect.width || 1000, h = rect.height || 800;
   const k = Math.min(w, h) / 1320;
-  const R = expandedId ? 432 : 348;
-  scale = Math.max(0.3, Math.min(3, ((Math.min(w, h) / 2) * 0.94) / (R * k)));
-  tx = 0; ty = 0;
+  let box;
+  if (contentBBox) {
+    box = { x1: contentBBox.x1, y1: contentBBox.y1, x2: contentBBox.x2, y2: contentBBox.y2 };
+  } else {
+    box = { x1: -352, y1: -352, x2: 352, y2: 352 };
+  }
+  const bw = Math.max(260, box.x2 - box.x1);
+  const bh = Math.max(260, box.y2 - box.y1);
+  const s2 = Math.min((w * 0.94) / (bw * k), (h * 0.94) / (bh * k));
+  scale = Math.max(0.25, Math.min(2.0, s2));
+  const cx = (box.x1 + box.x2) / 2, cy = (box.y1 + box.y2) / 2;
+  tx = -cx * scale; ty = -cy * scale;
   apply();
 }
 
@@ -1153,7 +1215,7 @@ function selectHub(){
   detail.innerHTML = `
     <p class="eyebrow">Сводка</p>
     <h2>Восемь веток, ${totalNodes} узлов</h2>
-    <p class="meta">клик по ветке раскрывает пункты</p>
+    <p class="meta">клик по ветке — список пунктов, клик по пункту — подробности</p>
     <div class="empty">
       <p>Слева — карта знаний: от подготовки смены до отчёта по кейсу. Раскрой ветку, открой пункт и отметь его как изученный: счётчик сверху покажет, сколько осталось.</p>
       <p><b>Порядок прохождения:</b> Правовой каркас → Каф: 10 шагов → Квалификация → Особые случаи → Следствие и кейс → Ошибки → Дрилл.</p>
@@ -1201,7 +1263,11 @@ function showNode(br, nd){
   detail.innerHTML = `
     <p class="eyebrow"><span class="cat" style="color:${color};border-color:${color}">${CATS[br.cat].name}</span> ${br.name}</p>
     <h2>${nd.title}</h2>
-    <div class="refs">${nd.refs.map(r=>`<span class="ref">${r}</span>`).join('') || '<span class="ref" style="background:transparent;border-color:rgba(32,38,44,.25);color:#5b6169">практика</span>'}</div>
+    <div class="refs">${nd.refs.map(r=>{
+      const u = refUrl(r);
+      return u ? `<a class="ref" href="${u}" target="_blank" rel="noopener" title="Открыть первоисточник на форуме">${r}</a>`
+               : `<span class="ref">${r}</span>`;
+    }).join('') || '<span class="ref muted">практика</span>'}</div>
     <ul>${nd.body.map(p=>`<li>${p}</li>`).join('')}</ul>
     <button class="mark" id="markBtn" aria-pressed="${isL}">${isL?'Изучено':'Отметить изученным'}</button>
   `;
@@ -1873,20 +1939,404 @@ const UK = [
  ]
 ];
 
+const UK_NOTES = {
+ "6.1 ч.1": [
+  "Побои или насилие, от которого остались лёгкие или средние повреждения: синяки, ссадины, сотрясение.",
+  "Толкнул человека в баре, тот ударился головой, вызвали EMS — фиксируется как 6.1 ч.1."
+ ],
+ "6.1 ч.2": [
+  "Насилие, которое едва не убило: тяжкие повреждения, опасные для жизни.",
+  "Избиение до реанимации с пробитой головой и переломами — это уже ч. 2."
+ ],
+ "6.1 ч.3": [
+  "Тяжкий вред без умысла: по неосторожности или в состоянии аффекта.",
+  "Столкнул на лестнице, человек упал и сломал шею — умысла не было, но вред тяжкий."
+ ],
+ "6.2 ч.1": [
+  "Умышленное лишение человека жизни.",
+  "Выстрел в голову в ходе конфликта — убийство."
+ ],
+ "6.2 ч.2": [
+  "Смерть по неосторожности или в аффекте, без прямого умысла убивать.",
+  "Ударил один раз, человек упал и разбился насмерть — не желал смерти."
+ ],
+ "6.3": [
+  "Убийство с отягчающими: двух и более лиц, по службе, с жестокостью, группой, за деньги.",
+  "Заказное убийство или убийство двух человек в одном эпизоде."
+ ],
+ "6.6": [
+  "Угроза убить или искалечить, когда жертва реально испугалась.",
+  "«Я тебя закопаю» с ножом в руке — угроза, даже если не тронул."
+ ],
+ "6.7": [
+  "Мешаешь врачу или медику делать свою работу.",
+  "Не даёшь EMS подойти к раненому, оттаскиваешь медика от пациента."
+ ],
+ "7.1": [
+  "Похищение: захват, перемещение и удержание человека.",
+  "Затащили в машину и увезли в лес с угрозами — похищение."
+ ],
+ "7.2": [
+  "Заставляешь человека работать против воли, используя зависимость.",
+  "Держишь работника без зарплаты и не выпускаешь с территории."
+ ],
+ "7.3": [
+  "Любая сделка по «продаже» человека: эксплуатация, вербовка, выгода.",
+  "Продал «долг» работника другому бизнесу за деньги."
+ ],
+ "7.4": [
+  "Клевета: распространяешь заведомо ложь, которая портит репутацию.",
+  "Публично пишешь, что врач берёт взятки, хотя это выдумка."
+ ],
+ "10.1": [
+  "Тайно украл чужое стоимостью дороже 15 000 $.",
+  "Вскрыл чужой сейф, пока хозяина не было, забрал 20 000 $."
+ ],
+ "10.1.1": [
+  "Кража со взломом: сломал замок, сейф, дверь хранилища.",
+  "Срезал замок склада и вынес товар — квалифицируется как кража со взломом."
+ ],
+ "10.2": [
+  "Мошенничество: получил чужое имущество обманом или доверием.",
+  "Продал несуществующую машину, взял предоплату и исчез."
+ ],
+ "10.2.1": [
+  "Вымогательство: требуешь деньги или имущество под угрозой.",
+  "«Отдай 50 тысяч, иначе сожгут твой магазин»."
+ ],
+ "10.3": [
+  "Грабёж: открыто отобрал вещи, не скрываясь.",
+  "Вырвал сумку из рук и убежал — кража открытая, то есть грабёж."
+ ],
+ "10.4": [
+  "Разбой: нападение с насилием или угрозой для жизни ради имущества.",
+  "Ударил прохожего и забрал бумажник — насилие опасное."
+ ],
+ "10.5": [
+  "Угон: забрал чужую машину без разрешения.",
+  "Покатался на чужом авто и бросил его в другом районе."
+ ],
+ "10.5.1": [
+  "То же, но с государственным транспортом: полицейская, скорая, армейская техника.",
+  "Угнал служебный автомобиль LSPD."
+ ],
+ "10.6": [
+  "Уничтожил или испортил чужое имущество из хулиганских побуждений.",
+  "Разбил витрину «просто так»."
+ ],
+ "10.7": [
+  "То же, но с государственным имуществом.",
+  "Разбил камеру DMV или служебный автомобиль."
+ ],
+ "12.1": [
+  "Терроризм: взрыв, поджог или действия, пугающие население ради влияния на власть.",
+  "Заложил взрывчатку у Капитолия и потребовал освободить заключённых."
+ ],
+ "12.1.1": [
+  "Публичные призывы к терроризму или оправдание терроризма.",
+  "В общем чате призываешь «взорвать всё» и хвалишь террористов."
+ ],
+ "12.1.2": [
+  "Вербовка или вовлечение человека в террористическую деятельность.",
+  "Предлагаешь знакомому вступить в группировку для теракта."
+ ],
+ "12.2": [
+  "Знал о готовящемся преступлении и не сообщил органам.",
+  "Тебе рассказали о готовящемся ограблении банка, а ты промолчал."
+ ],
+ "12.3": [
+  "Ложное сообщение о бомбе или теракте.",
+  "Позвонил «в больнице бомба» ради шутки."
+ ],
+ "12.4": [
+  "Экстремизм: разжигание ненависти публично.",
+  "Публичные выкрики против группы людей по национальности или религии."
+ ],
+ "12.5": [
+  "Организация запрещённой экстремистской организации или участие в ней.",
+  "Собираешь людей в организацию, запрещённую судом."
+ ],
+ "12.6": [
+  "Нарушение порядка собрания, митинга или публичного мероприятия.",
+  "Устроил митинг без согласования и не реагируешь на требования разойтись."
+ ],
+ "12.6.1": [
+  "Массовые беспорядки с насилием, погромами, оружием.",
+  "Толпа громит магазины и жжёт машины."
+ ],
+ "12.7 ч.1": [
+  "Проникновение на охраняемый объект, куда нельзя.",
+  "Перелез через забор на территорию LSPD."
+ ],
+ "12.7 ч.2": [
+  "То же, но объект особо охраняемый — Форт Занкудо, офис LSPD.",
+  "Пробрался на Форт Занкудо через периметр."
+ ],
+ "12.7 ч.3": [
+  "То же, но сделал это должностное лицо, используя службу.",
+  "Сотрудник госструктуры проникает на закрытый объект по своему пропуску."
+ ],
+ "12.8": [
+  "Незаконное оружие: купил, хранил, носил, перевозил или сбыл.",
+  "Пистолет без лицензии в бардачке или в кармане."
+ ],
+ "12.8.1": [
+  "Оружие или спецсредства государственного образца у гражданского.",
+  "Тазер с госномером или полицейский бронежилет на гражданском."
+ ],
+ "12.11": [
+  "Создание незаконного вооружённого формирования.",
+  "Сколотил отряд с оружием и «своими правилами» в городе."
+ ],
+ "12.12": [
+  "Организация преступного сообщества или участие в нём.",
+  "Держишь структуру, которая распределяет районы и крышует бизнесы."
+ ],
+ "12.13": [
+  "Получил сведения, составляющие государственную тайну, незаконным способом.",
+  "Украл документы с грифом или выманил их обманом."
+ ],
+ "13.1 ч.1": [
+  "Хранишь или носишь наркотики свыше 3 г без цели сбыта.",
+  "Нашли 5 г марихуаны в кармане — ч. 1."
+ ],
+ "13.1 ч.2": [
+  "То же, но свыше 10 г.",
+  "Нашли 12 г — ч. 2, это уже с судимостью."
+ ],
+ "13.1 ч.3": [
+  "То же, но свыше 25 г.",
+  "25+ г при себе — 5 лет и судимость."
+ ],
+ "13.2 ч.1": [
+  "Производство, сбыт или пересылка наркотиков.",
+  "Продаёшь закладки или варишь «продукт» на продажу."
+ ],
+ "13.2 ч.2": [
+  "Сбыт группой, свыше 25 г или лицом с использованием службы.",
+  "Сотрудник госструктуры толкает наркотики через служебный доступ."
+ ],
+ "13.3": [
+  "Культивирование и сбор наркосодержащих растений.",
+  "Грядка или куст Green с поливом и удобрениями."
+ ],
+ "13.4": [
+  "Организация проституции или вовлечение в неё.",
+  "Держишь «точку» и приводишь новых людей."
+ ],
+ "13.5 ч.1": [
+  "Перевозка грузов с поддельными накладными.",
+  "Везёшь товар по липовым документам на проверке."
+ ],
+ "14.1": [
+  "Публичная дискредитация госорганов с существенным вредом.",
+  "Публично призываешь не подчиняться полиции, из-за чего начались беспорядки."
+ ],
+ "14.2": [
+  "Попытка захвата или удержания власти, вооружённый мятеж.",
+  "Захват мэрии с оружием и объявление «новой власти»."
+ ],
+ "14.2.1": [
+  "Сепаратизм: попытка отделить территорию штата.",
+  "Призывы выйти из штата и создать своё «государство» на части карты."
+ ],
+ "14.3": [
+  "Разглашение государственной тайны.",
+  "Передал документы с грифом постороннему или выложил в сеть."
+ ],
+ "14.3.1": [
+  "Незаконно добыл сведения, составляющие гостайну.",
+  "Шантажом или обманом выманил секретные данные."
+ ],
+ "14.3.2": [
+  "Утратил документы с гостайной из-за нарушения правил обращения.",
+  "Оставил секретный планшет в баре — он пропал."
+ ],
+ "15.1 ч.1": [
+  "Превышение полномочий с существенным нарушением прав.",
+  "Провёл обыск без оснований и изъял имущество."
+ ],
+ "15.1 ч.2": [
+  "То же с насилием, оружием, тяжкими последствиями или по корысти.",
+  "Применил тазер к человеку вне стадий силы, чтобы «проучить»."
+ ],
+ "15.1.1": [
+  "Злоупотребление полномочиями: использовал службу вопреки интересам службы.",
+  "Прикрыл друга-нарушителя или дал доступ к базе не по делу."
+ ],
+ "15.2": [
+  "Неисполнение приказа, указа или нормативного акта.",
+  "Игнорируешь прямой приказ руководителя, из-за чего пострадало дело."
+ ],
+ "15.3 ч.2": [
+  "Гражданский надел форму и выдаёт себя за должностное лицо.",
+  "Человек в форме «полиции» требует документы и деньги."
+ ],
+ "15.4": [
+  "Получение взятки должностным лицом.",
+  "Взял 100 тысяч, чтобы «закрыть глаза» на нарушение."
+ ],
+ "15.5": [
+  "Дача взятки.",
+  "Предлагаешь сотруднику деньги за отказ от протокола."
+ ],
+ "15.5.1": [
+  "Посредничество во взяточничестве.",
+  "Передаёшь конверт от одного другому за процент."
+ ],
+ "15.6 ч.1": [
+  "Халатность: не выполнил обязанности, причинив крупный ущерб.",
+  "Не проверил склад, из-за чего пропало имущество фракции."
+ ],
+ "15.6 ч.2": [
+  "Халатность, повлёкшая тяжкий вред или смерть.",
+  "Не оказал помощь раненому, человек умер."
+ ],
+ "16.1": [
+  "Воспрепятствование правосудию или следствию.",
+  "Давишь на свидетеля, чтобы тот не давал показания."
+ ],
+ "16.3": [
+  "Привлёк к ответственности заведомо невиновного.",
+  "Оформил арест человеку, который точно не причастен."
+ ],
+ "16.4": [
+  "Заведомо незаконное задержание или содержание под стражей.",
+  "Задержал без основания из ст. 16 ч. 2 ПК и продержал час."
+ ],
+ "16.6": [
+  "Фальсификация доказательств по уголовному делу.",
+  "Подложил в дело улику, которой не было."
+ ],
+ "16.8": [
+  "Заведомо ложные показания в суде.",
+  "В суде говоришь одно, а по факту было другое."
+ ],
+ "16.10 ч.1": [
+  "Неисполнение ордера, решения суда, адвокатского запроса.",
+  "Игнорируешь официальный запрос защитника."
+ ],
+ "16.10 ч.2": [
+  "То же, но сделал представитель власти или госслужащий.",
+  "Сотрудник демонстративно не исполняет решение суда."
+ ],
+ "16.11": [
+  "Сокрытие или уничтожение улик.",
+  "Стёр запись с бодикамеры, чтобы скрыть нарушение."
+ ],
+ "16.12": [
+  "Уклонение от расследования, задержания или суда.",
+  "Скрываешься от ордера, меняешь внешность и «ложишься на дно»."
+ ],
+ "16.13.1": [
+  "Ложные показания в ходе предварительного следствия.",
+  "На допросе придумал алиби с несуществующим свидетелем."
+ ],
+ "16.14": [
+  "Отказ свидетеля или потерпевшего давать показания.",
+  "Свидетель молчит и отказывается говорить по делу."
+ ],
+ "16.15": [
+  "Уклонение от отбывания наказания или ограничения свободы.",
+  "Сбежал из-под стражи или не явился в КПЗ по решению."
+ ],
+ "17.1": [
+  "Посягательство на жизнь сотрудника при исполнении.",
+  "Стрелял в полицейского во время погони."
+ ],
+ "17.2": [
+  "Насилие или угроза насилия в отношении сотрудника.",
+  "Ударил сотрудника при задержании, но без опасности для жизни."
+ ],
+ "17.3 ч.1": [
+  "Оскорбление представителя власти при исполнении.",
+  "Материшь сотрудника во время оформления и называешь его «никем»."
+ ],
+ "17.4": [
+  "Провокация госслужащего: отвлекаешь или мешаешь работать.",
+  "Постоянно дёргаешь сотрудника на вызове, чтобы тот сорвался."
+ ],
+ "17.5": [
+  "Самоуправство: сам решаешь вопрос вопреки закону.",
+  "Сам «наказал» вора вместо передачи полиции."
+ ],
+ "17.6": [
+  "Неповиновение законному требованию.",
+  "Требуют отойти — стоишь и продолжаешь лезть."
+ ],
+ "17.7": [
+  "Отказ от оплаты штрафа.",
+  "Порвал тикет или демонстративно не платишь."
+ ],
+ "17.8": [
+  "Подделка удостоверения, лицензии или использование чужой.",
+  "Показываешь липовую лицензию на оружие."
+ ],
+ "17.9": [
+  "Ложный вызов о заложниках или похищении.",
+  "Вызвал спецназ «на похищение», которого не было."
+ ]
+};
+
 const ukbody = document.getElementById('ukbody');
-function renderUK(filter=''){
-  const q = filter.trim().toLowerCase();
-  const rows = UK.filter(r=>!q || (r[0]+' '+r[1]+' '+r[2]).toLowerCase().includes(q));
-  ukbody.innerHTML = rows.map(r=>`<tr>
-      <td class="art">${r[0]}</td>
+const FAV_KEY = 'fib_nsb_favs';
+const favs = new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]'));
+const openDetails = new Set();
+const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const qsel = (art) => (window.CSS && CSS.escape) ? CSS.escape(art) : art.replace(/"/g, '\\"');
+
+function ukRow(r){
+  const isFav = favs.has(r[0]);
+  const note = (typeof UK_NOTES !== 'undefined') ? UK_NOTES[r[0]] : null;
+  return `<tr class="ukrow${isFav?' fav':''}" data-art="${esc(r[0])}">
+      <td class="favcol"><button class="favbtn${isFav?' on':''}" data-fav="${esc(r[0])}" aria-pressed="${isFav}" aria-label="Избранное" title="${isFav?'Убрать из избранного':'Закрепить сверху'}">★</button></td>
+      <td class="art">${esc(r[0])}</td>
       <td>${r[1]}</td>
       <td class="st">${r[2]?'★'.repeat(r[2]):'—'}</td>
       <td class="pen">${r[3]}</td>
-    </tr>`).join('') || '<tr><td colspan="4" style="color:var(--text-dim);padding:16px 0">Ничего не найдено</td></tr>';
-  document.getElementById('ukcount').textContent = rows.length + ' из ' + UK.length;
+    </tr>
+    <tr class="ukdetail" hidden data-for="${esc(r[0])}"><td></td><td colspan="4">
+      <div class="uknote">
+        ${note ? `<p>${note[0]}</p><p class="ex"><b>Пример:</b> ${note[1]}</p>` : '<p>Пояснение готовится.</p>'}
+        <a class="srclink" href="${UK_URL}" target="_blank" rel="noopener">Открыть УК на форуме</a>
+      </div>
+    </td></tr>`;
+}
+
+function renderUK(filter=''){
+  const q = filter.trim().toLowerCase();
+  const rows = UK.filter(r=>!q || (r[0]+' '+r[1]+' '+r[2]).toLowerCase().includes(q))
+                 .slice()
+                 .sort((a,b)=>(favs.has(b[0])?1:0)-(favs.has(a[0])?1:0));
+  const favCount = rows.filter(r=>favs.has(r[0])).length;
+  ukbody.innerHTML = rows.map(ukRow).join('') || '<tr><td colspan="5" class="empty-cell">Ничего не найдено</td></tr>';
+  openDetails.forEach(art=>{
+    const d = ukbody.querySelector('.ukdetail[data-for="'+qsel(art)+'"]');
+    if(d){ d.hidden = false; const row = ukbody.querySelector('.ukrow[data-art="'+qsel(art)+'"]'); if(row) row.classList.add('open'); }
+  });
+  document.getElementById('ukcount').textContent = rows.length + ' из ' + UK.length + (favCount ? ' · закреплено ' + favCount : '');
 }
 renderUK();
 document.getElementById('uksearch').addEventListener('input', e=>renderUK(e.target.value));
+
+ukbody.addEventListener('click', (e)=>{
+  const favBtn = e.target.closest('[data-fav]');
+  if(favBtn){
+    const art = favBtn.dataset.fav;
+    if(favs.has(art)) favs.delete(art); else favs.add(art);
+    localStorage.setItem(FAV_KEY, JSON.stringify([...favs]));
+    renderUK(document.getElementById('uksearch').value);
+    return;
+  }
+  const row = e.target.closest('.ukrow');
+  if(!row) return;
+  const art = row.dataset.art;
+  const det = ukbody.querySelector('.ukdetail[data-for="'+qsel(art)+'"]');
+  if(!det) return;
+  det.hidden = !det.hidden;
+  row.classList.toggle('open', !det.hidden);
+  if(det.hidden) openDetails.delete(art); else openDetails.add(art);
+});
 
 /* ---------------- checklist ---------------- */
 const CHECK = [
